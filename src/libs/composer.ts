@@ -41,10 +41,15 @@ export class SDUIComposer {
         location: "composer.ts:35",
         message: "compose entry",
         data: {
-          type: json.type,
-          moduleId: json.moduleId,
-          hasChildren: !!json.children,
-          childrenCount: json.children?.length || 0,
+          json: json,
+          type: json?.type,
+          typeIsUndefined: json?.type === undefined,
+          typeIsNull: json?.type === null,
+          typeIsEmpty: json?.type === "",
+          moduleId: json?.moduleId,
+          hasChildren: !!json?.children,
+          childrenCount: json?.children?.length || 0,
+          jsonKeys: json ? Object.keys(json) : [],
         },
         timestamp: Date.now(),
         sessionId: "debug-session",
@@ -53,6 +58,17 @@ export class SDUIComposer {
       }),
     }).catch(() => {});
     // #endregion
+
+    if (!json || !json.type) {
+      return throwError(
+        () =>
+          new Error(
+            `Invalid ComponentDefinition: 'type' is required. Received: ${JSON.stringify(
+              json
+            )}`
+          )
+      );
+    }
     const module$: Observable<ModuleDefinition | undefined> = json.moduleId
       ? from(
           this.moduleLoader.loadModule(

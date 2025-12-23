@@ -24,10 +24,15 @@ class SDUIComposer {
                 location: "composer.ts:35",
                 message: "compose entry",
                 data: {
-                    type: json.type,
-                    moduleId: json.moduleId,
-                    hasChildren: !!json.children,
-                    childrenCount: ((_a = json.children) === null || _a === void 0 ? void 0 : _a.length) || 0,
+                    json: json,
+                    type: json === null || json === void 0 ? void 0 : json.type,
+                    typeIsUndefined: (json === null || json === void 0 ? void 0 : json.type) === undefined,
+                    typeIsNull: (json === null || json === void 0 ? void 0 : json.type) === null,
+                    typeIsEmpty: (json === null || json === void 0 ? void 0 : json.type) === "",
+                    moduleId: json === null || json === void 0 ? void 0 : json.moduleId,
+                    hasChildren: !!(json === null || json === void 0 ? void 0 : json.children),
+                    childrenCount: ((_a = json === null || json === void 0 ? void 0 : json.children) === null || _a === void 0 ? void 0 : _a.length) || 0,
+                    jsonKeys: json ? Object.keys(json) : [],
                 },
                 timestamp: Date.now(),
                 sessionId: "debug-session",
@@ -36,6 +41,9 @@ class SDUIComposer {
             }),
         }).catch(() => { });
         // #endregion
+        if (!json || !json.type) {
+            return (0, rxjs_1.throwError)(() => new Error(`Invalid ComponentDefinition: 'type' is required. Received: ${JSON.stringify(json)}`));
+        }
         const module$ = json.moduleId
             ? (0, rxjs_1.from)(this.moduleLoader.loadModule(json.moduleId, this.modulePathResolver(json.moduleId)))
             : (0, rxjs_1.of)(undefined);
