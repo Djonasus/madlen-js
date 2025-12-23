@@ -1,4 +1,4 @@
-import { catchError, take } from "rxjs/operators";
+import { catchError, take, switchMap } from "rxjs/operators";
 import { ComponentDefinition, composer } from "./composer";
 import { inject } from "./di";
 import { HttpService } from "./http";
@@ -28,10 +28,10 @@ export class Bootstrap {
         catchError((error: Error) => {
           throw new Error(`Failed to fetch layout: ${error}`);
         }),
-        take(1)
+        take(1),
+        switchMap((layout) => composer.compose(layout))
       )
-      .subscribe(async (layout) => {
-        const element = await composer.compose(layout);
+      .subscribe((element) => {
         container.appendChild(element);
       });
   }

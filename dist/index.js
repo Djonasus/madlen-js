@@ -19,6 +19,7 @@ __exportStar(require("./libs/component"), exports);
 __exportStar(require("./libs/http"), exports);
 __exportStar(require("./libs/module-loader"), exports);
 __exportStar(require("./libs/composer"), exports);
+__exportStar(require("./libs/bootstrap"), exports);
 // TEST EXAMPLE
 // const layout = {
 //   type: "app-button",
