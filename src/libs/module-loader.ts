@@ -47,10 +47,7 @@ export class ModuleLoader {
     moduleId: string,
     modulePath: string
   ): Promise<ModuleDefinition> {
-    const dynamicImport = new Function(
-      "specifier",
-      "return import(specifier)"
-    );
+    const dynamicImport = new Function("specifier", "return import(specifier)");
 
     // Пробуем загрузить с исходным путем
     let lastError: any;
@@ -59,6 +56,11 @@ export class ModuleLoader {
       return this.validateModule(moduleId, module, modulePath);
     } catch (error: any) {
       lastError = error;
+      // Логируем детали ошибки для отладки
+      console.error(
+        `Failed to load module ${moduleId} from ${modulePath}:`,
+        error
+      );
     }
 
     // Если не удалось, пробуем с альтернативным расширением
@@ -68,14 +70,20 @@ export class ModuleLoader {
         const module = await dynamicImport(alternatePath);
         return this.validateModule(moduleId, module, alternatePath);
       } catch (error: any) {
-        // Игнорируем ошибку альтернативного пути, используем оригинальную
+        console.error(
+          `Failed to load module ${moduleId} from alternate path ${alternatePath}:`,
+          error
+        );
       }
     }
 
+    // Выбрасываем более детальную ошибку
+    const errorMessage =
+      lastError?.message || String(lastError) || "Unknown error";
+    const errorStack = lastError?.stack ? `\nStack: ${lastError.stack}` : "";
+
     throw new Error(
-      `Failed to load module ${moduleId} from ${modulePath}: ${
-        lastError?.message || lastError
-      }`
+      `Failed to load module ${moduleId} from ${modulePath}: ${errorMessage}${errorStack}`
     );
   }
 

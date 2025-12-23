@@ -34,6 +34,8 @@ export class ModuleLoader {
         }
         catch (error) {
             lastError = error;
+            // Логируем детали ошибки для отладки
+            console.error(`Failed to load module ${moduleId} from ${modulePath}:`, error);
         }
         // Если не удалось, пробуем с альтернативным расширением
         const alternatePath = this.getAlternateExtensionPath(modulePath);
@@ -43,10 +45,13 @@ export class ModuleLoader {
                 return this.validateModule(moduleId, module, alternatePath);
             }
             catch (error) {
-                // Игнорируем ошибку альтернативного пути, используем оригинальную
+                console.error(`Failed to load module ${moduleId} from alternate path ${alternatePath}:`, error);
             }
         }
-        throw new Error(`Failed to load module ${moduleId} from ${modulePath}: ${lastError?.message || lastError}`);
+        // Выбрасываем более детальную ошибку
+        const errorMessage = lastError?.message || String(lastError) || "Unknown error";
+        const errorStack = lastError?.stack ? `\nStack: ${lastError.stack}` : "";
+        throw new Error(`Failed to load module ${moduleId} from ${modulePath}: ${errorMessage}${errorStack}`);
     }
     validateModule(moduleId, module, modulePath) {
         if (!module.moduleDefinition) {
