@@ -30,31 +30,6 @@ export class Bootstrap {
         }),
         take(1),
         map((response) => {
-          console.log(response);
-          // #region agent log
-          fetch(
-            "http://127.0.0.1:7242/ingest/56b6cbd4-937e-49c5-bfa8-a789eb16c032",
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                location: "bootstrap.ts:32",
-                message: "layout received from server",
-                data: {
-                  response: response,
-                  hasComponent: "component" in (response || {}),
-                  component: response?.component,
-                  componentType: response?.component?.type,
-                  responseKeys: response ? Object.keys(response) : [],
-                },
-                timestamp: Date.now(),
-                sessionId: "debug-session",
-                runId: "run1",
-                hypothesisId: "A",
-              }),
-            }
-          ).catch(() => {});
-          // #endregion
           if (!response || !response.component) {
             throw new Error(
               `Invalid layout response: missing 'component' field. Received: ${JSON.stringify(
@@ -65,30 +40,6 @@ export class Bootstrap {
           return response.component;
         }),
         switchMap((layout) => {
-          // #region agent log
-          fetch(
-            "http://127.0.0.1:7242/ingest/56b6cbd4-937e-49c5-bfa8-a789eb16c032",
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                location: "bootstrap.ts:60",
-                message: "extracted component",
-                data: {
-                  layout: layout,
-                  layoutType: typeof layout,
-                  hasType: "type" in (layout || {}),
-                  typeValue: layout?.type,
-                  layoutKeys: layout ? Object.keys(layout) : [],
-                },
-                timestamp: Date.now(),
-                sessionId: "debug-session",
-                runId: "run1",
-                hypothesisId: "A",
-              }),
-            }
-          ).catch(() => {});
-          // #endregion
           if (!layout || !layout.type) {
             throw new Error(
               `Invalid layout data: missing 'type' field. Received: ${JSON.stringify(
@@ -104,28 +55,6 @@ export class Bootstrap {
           container.appendChild(element);
         },
         error: (error) => {
-          // #region agent log
-          fetch(
-            "http://127.0.0.1:7242/ingest/56b6cbd4-937e-49c5-bfa8-a789eb16c032",
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                location: "bootstrap.ts:subscribe-error",
-                message: "subscribe error",
-                data: {
-                  errorMessage: error?.message,
-                  errorName: error?.name,
-                  errorStack: error?.stack,
-                },
-                timestamp: Date.now(),
-                sessionId: "debug-session",
-                runId: "run1",
-                hypothesisId: "A",
-              }),
-            }
-          ).catch(() => {});
-          // #endregion
           console.error("Failed to render layout:", error);
         },
       });
