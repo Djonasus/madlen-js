@@ -13,6 +13,8 @@ export declare class ModuleLoader {
     private loadingPromises;
     loadModule(moduleId: string, modulePath: string): Promise<ModuleDefinition>;
     private doLoadModule;
+    private validateModule;
+    private getAlternateExtensionPath;
     getModule(moduleId: string): ModuleDefinition | undefined;
     isLoaded(moduleId: string): boolean;
     unloadModule(moduleId: string): Promise<void>;

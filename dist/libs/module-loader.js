@@ -25,21 +25,47 @@ export class ModuleLoader {
         }
     }
     async doLoadModule(moduleId, modulePath) {
+        const dynamicImport = new Function("specifier", "return import(specifier)");
+        // Пробуем загрузить с исходным путем
+        let lastError;
         try {
-            const dynamicImport = new Function("specifier", "return import(specifier)");
             const module = await dynamicImport(modulePath);
-            if (!module.moduleDefinition) {
-                throw new Error(`Module ${moduleId} does not export moduleDefinition`);
-            }
-            const definition = module.moduleDefinition;
-            if (definition.id !== moduleId) {
-                throw new Error(`Module ID mismatch: expected ${moduleId}, got ${definition.id}`);
-            }
-            return definition;
+            return this.validateModule(moduleId, module, modulePath);
         }
         catch (error) {
-            throw new Error(`Failed to load module ${moduleId} from ${modulePath}: ${error?.message || error}`);
+            lastError = error;
         }
+        // Если не удалось, пробуем с альтернативным расширением
+        const alternatePath = this.getAlternateExtensionPath(modulePath);
+        if (alternatePath && alternatePath !== modulePath) {
+            try {
+                const module = await dynamicImport(alternatePath);
+                return this.validateModule(moduleId, module, alternatePath);
+            }
+            catch (error) {
+                // Игнорируем ошибку альтернативного пути, используем оригинальную
+            }
+        }
+        throw new Error(`Failed to load module ${moduleId} from ${modulePath}: ${lastError?.message || lastError}`);
+    }
+    validateModule(moduleId, module, modulePath) {
+        if (!module.moduleDefinition) {
+            throw new Error(`Module ${moduleId} does not export moduleDefinition`);
+        }
+        const definition = module.moduleDefinition;
+        if (definition.id !== moduleId) {
+            throw new Error(`Module ID mismatch: expected ${moduleId}, got ${definition.id}`);
+        }
+        return definition;
+    }
+    getAlternateExtensionPath(modulePath) {
+        if (modulePath.endsWith(".ts")) {
+            return modulePath.replace(/\.ts$/, ".js");
+        }
+        if (modulePath.endsWith(".js")) {
+            return modulePath.replace(/\.js$/, ".ts");
+        }
+        return null;
     }
     getModule(moduleId) {
         return this.loadedModules.get(moduleId);
