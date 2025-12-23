@@ -43,7 +43,9 @@ export class SDUIComposer {
                 if (!template || template.trim() === "") {
                     throw new Error(`Template is empty for component ${json.type}. Check templateUrl or template property.`);
                 }
+                console.log(`[Composer] Loading template for ${json.type}:`, template);
                 const element = this.createElementFromTemplate(template);
+                console.log(`[Composer] Created element:`, element.tagName, element);
                 if (componentVersion) {
                     element.setAttribute("data-component-version", componentVersion);
                     element.setAttribute("data-component-type", json.type);

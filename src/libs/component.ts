@@ -61,6 +61,7 @@ export class ComponentPool {
         selector,
         metadata.templateUrl
       );
+      console.log(`[ComponentPool] Loading template from: ${templateUrl}`);
       try {
         const response = await fetch(templateUrl);
         if (!response.ok) {
@@ -69,12 +70,14 @@ export class ComponentPool {
           );
         }
         const content = await response.text();
+        console.log(`[ComponentPool] Template content loaded:`, content);
         if (!content || content.trim() === "") {
           throw new Error(`Template file ${templateUrl} is empty`);
         }
         metadata.templateContent = content;
         return content;
       } catch (error: any) {
+        console.error(`[ComponentPool] Error loading template:`, error);
         throw new Error(
           `Failed to load template from ${templateUrl}: ${error.message}`
         );
