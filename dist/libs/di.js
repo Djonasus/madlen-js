@@ -1,10 +1,5 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.DIPool = void 0;
-exports.provide = provide;
-exports.inject = inject;
-require("reflect-metadata");
-class DIPool {
+import "reflect-metadata";
+export class DIPool {
     constructor() {
         this.providers = new Map();
         this.instances = new Map();
@@ -25,17 +20,17 @@ class DIPool {
         return instance;
     }
 }
-exports.DIPool = DIPool;
 const globalDIPool = new DIPool();
-function provide(customInjectionToken, customDIPool = globalDIPool) {
+export function provide(customInjectionToken, customDIPool = globalDIPool) {
     return (constructor) => {
-        const injectionToken = customInjectionToken !== null && customInjectionToken !== void 0 ? customInjectionToken : constructor;
+        const injectionToken = customInjectionToken ?? constructor;
         customDIPool.register(injectionToken, () => new constructor());
     };
 }
-function inject(customInjectionToken, customDIPool = globalDIPool) {
+export function inject(customInjectionToken, customDIPool = globalDIPool) {
     return (target, propertyKey) => {
-        const injectionToken = customInjectionToken !== null && customInjectionToken !== void 0 ? customInjectionToken : Reflect.getMetadata("design:type", target, propertyKey);
+        const injectionToken = customInjectionToken ??
+            Reflect.getMetadata("design:type", target, propertyKey);
         if (!injectionToken) {
             throw new Error(`Injection token for ${propertyKey} not found`);
         }

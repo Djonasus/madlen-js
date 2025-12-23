@@ -1,38 +1,35 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.composer = exports.SDUIComposer = void 0;
-const rxjs_1 = require("rxjs");
-const operators_1 = require("rxjs/operators");
-const component_1 = require("./component");
-const module_loader_1 = require("./module-loader");
-class SDUIComposer {
+import { from, forkJoin, of, throwError } from "rxjs";
+import { switchMap, map, catchError } from "rxjs/operators";
+import { globalComponentPool } from "./component";
+import { moduleLoader } from "./module-loader";
+export class SDUIComposer {
     constructor(options = {}) {
-        this.moduleLoader = options.moduleLoader || module_loader_1.moduleLoader;
+        this.moduleLoader = options.moduleLoader || moduleLoader;
         this.globalComponentPool =
-            options.globalComponentPool || component_1.globalComponentPool;
+            options.globalComponentPool || globalComponentPool;
         this.modulePathResolver =
             options.modulePathResolver ||
                 ((moduleId) => `/modules/${moduleId}/index.js`);
     }
     compose(json) {
         if (!json || !json.type) {
-            return (0, rxjs_1.throwError)(() => new Error(`Invalid ComponentDefinition: 'type' is required. Received: ${JSON.stringify(json)}`));
+            return throwError(() => new Error(`Invalid ComponentDefinition: 'type' is required. Received: ${JSON.stringify(json)}`));
         }
         const module$ = json.moduleId
-            ? (0, rxjs_1.from)(this.moduleLoader.loadModule(json.moduleId, this.modulePathResolver(json.moduleId)))
-            : (0, rxjs_1.of)(undefined);
-        return module$.pipe((0, operators_1.switchMap)((module) => {
+            ? from(this.moduleLoader.loadModule(json.moduleId, this.modulePathResolver(json.moduleId)))
+            : of(undefined);
+        return module$.pipe(switchMap((module) => {
             const componentPool = module
                 ? module.componentPool
                 : this.globalComponentPool;
             const ComponentClass = componentPool.get(json.type);
             if (!ComponentClass) {
                 const poolName = module ? `module ${json.moduleId}` : "global";
-                return (0, rxjs_1.throwError)(() => new Error(`Component ${json.type} not found in ${poolName} component pool`));
+                return throwError(() => new Error(`Component ${json.type} not found in ${poolName} component pool`));
             }
             const componentMetadata = componentPool.getMetadata(json.type);
-            const componentVersion = json.version || (componentMetadata === null || componentMetadata === void 0 ? void 0 : componentMetadata.version);
-            return (0, rxjs_1.from)(componentPool.loadTemplate(json.type)).pipe((0, operators_1.map)((template) => {
+            const componentVersion = json.version || componentMetadata?.version;
+            return from(componentPool.loadTemplate(json.type)).pipe(map((template) => {
                 const element = this.createElementFromTemplate(template);
                 if (componentVersion) {
                     element.setAttribute("data-component-version", componentVersion);
@@ -48,21 +45,21 @@ class SDUIComposer {
                     this.applyProps(element, json.props);
                 }
                 return { element, children: json.children };
-            }), (0, operators_1.switchMap)(({ element, children }) => {
+            }), switchMap(({ element, children }) => {
                 if (children && children.length > 0) {
                     const children$ = children.map((child) => this.compose(child));
-                    return (0, rxjs_1.forkJoin)(children$).pipe((0, operators_1.map)((childElements) => {
+                    return forkJoin(children$).pipe(map((childElements) => {
                         childElements.forEach((childElement) => {
                             element.appendChild(childElement);
                         });
                         return element;
                     }));
                 }
-                return (0, rxjs_1.of)(element);
+                return of(element);
             }));
-        }), (0, operators_1.catchError)((error) => {
+        }), catchError((error) => {
             const errorMessage = error instanceof Error ? error.message : String(error);
-            return (0, rxjs_1.throwError)(() => new Error(`Failed to compose component: ${errorMessage}`));
+            return throwError(() => new Error(`Failed to compose component: ${errorMessage}`));
         }));
     }
     createElementFromTemplate(template) {
@@ -126,10 +123,10 @@ class SDUIComposer {
     composeMultiple(definitions, container) {
         const root = container || document.createElement("div");
         if (definitions.length === 0) {
-            return (0, rxjs_1.of)(root);
+            return of(root);
         }
         const elements$ = definitions.map((definition) => this.compose(definition));
-        return (0, rxjs_1.forkJoin)(elements$).pipe((0, operators_1.map)((elements) => {
+        return forkJoin(elements$).pipe(map((elements) => {
             elements.forEach((element) => {
                 root.appendChild(element);
             });
@@ -137,6 +134,5 @@ class SDUIComposer {
         }));
     }
 }
-exports.SDUIComposer = SDUIComposer;
-exports.composer = new SDUIComposer();
+export const composer = new SDUIComposer();
 //# sourceMappingURL=composer.js.map

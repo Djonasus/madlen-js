@@ -48,7 +48,11 @@ export class ModuleLoader {
     modulePath: string
   ): Promise<ModuleDefinition> {
     try {
-      const module = await import(modulePath);
+      const dynamicImport = new Function(
+        "specifier",
+        "return import(specifier)"
+      );
+      const module = await dynamicImport(modulePath);
 
       if (!module.moduleDefinition) {
         throw new Error(`Module ${moduleId} does not export moduleDefinition`);
@@ -63,9 +67,11 @@ export class ModuleLoader {
       }
 
       return definition;
-    } catch (error) {
+    } catch (error: any) {
       throw new Error(
-        `Failed to load module ${moduleId} from ${modulePath}: ${error}`
+        `Failed to load module ${moduleId} from ${modulePath}: ${
+          error?.message || error
+        }`
       );
     }
   }
