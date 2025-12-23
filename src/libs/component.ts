@@ -6,12 +6,14 @@ export interface ComponentProps {
   [key: string]: any;
 }
 
-export interface ComponentInstance {
-  props?: ComponentProps;
+export interface ComponentInstance<
+  TProps extends ComponentProps = ComponentProps
+> {
+  props?: TProps;
   element?: HTMLElement;
   onInit?: () => void;
   onDestroy?: () => void;
-  onPropsChange?: (props: ComponentProps) => void;
+  onPropsChange?: (props: TProps) => void;
 }
 
 interface ComponentOptions {

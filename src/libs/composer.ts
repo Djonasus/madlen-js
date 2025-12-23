@@ -8,6 +8,8 @@ import {
 } from "./component";
 import { ModuleLoader, ModuleDefinition, moduleLoader } from "./module-loader";
 
+type Constructor<T = any> = new (...args: any[]) => T;
+
 export interface ComponentDefinition {
   type: string;
   moduleId?: string;
@@ -63,7 +65,9 @@ export class SDUIComposer {
           ? module.componentPool
           : this.globalComponentPool;
 
-        const ComponentClass = componentPool.get(json.type);
+        const ComponentClass = componentPool.get<
+          Constructor<ComponentInstance>
+        >(json.type);
         if (!ComponentClass) {
           const poolName = module ? `module ${json.moduleId}` : "global";
           return throwError(
@@ -316,15 +320,17 @@ export class SDUIComposer {
     return standardAttributes.includes(key.toLowerCase());
   }
 
-  private createComponentInstance(
-    ComponentClass: any,
+  private createComponentInstance<
+    TProps extends ComponentProps = ComponentProps
+  >(
+    ComponentClass: Constructor<ComponentInstance<TProps>>,
     props?: ComponentProps,
     element?: HTMLElement
-  ): ComponentInstance {
+  ): ComponentInstance<TProps> {
     const instance = new ComponentClass();
 
     if (props) {
-      instance.props = props;
+      instance.props = props as TProps;
     }
     if (element) {
       instance.element = element;
