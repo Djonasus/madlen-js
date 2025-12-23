@@ -10,15 +10,15 @@ exports.HttpService = void 0;
 const rxjs_1 = require("rxjs");
 const di_1 = require("./di");
 function errorHandler(response$) {
-    return response$.pipe((0, rxjs_1.map)((response) => {
+    return response$.pipe((0, rxjs_1.switchMap)((response) => {
         if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            return (0, rxjs_1.throwError)(() => new Error(`HTTP ${response.status}: ${response.statusText}`));
         }
         const contentType = response.headers.get("content-type");
         if (!contentType || !contentType.includes("application/json")) {
-            return null;
+            return (0, rxjs_1.throwError)(() => new Error("Response is not JSON"));
         }
-        return response.json();
+        return (0, rxjs_1.from)(response.json());
     }), (0, rxjs_1.catchError)((error) => {
         if (error instanceof SyntaxError) {
             return (0, rxjs_1.throwError)(() => new Error("Failed to parse JSON response"));

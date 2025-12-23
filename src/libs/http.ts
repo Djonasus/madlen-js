@@ -1,17 +1,19 @@
-import { catchError, from, map, Observable, of, throwError } from "rxjs";
+import { catchError, from, map, Observable, switchMap, throwError } from "rxjs";
 import { provide } from "./di";
 
 function errorHandler<T>(response$: Observable<Response>): Observable<T> {
   return response$.pipe(
-    map((response: Response) => {
+    switchMap((response: Response) => {
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        return throwError(
+          () => new Error(`HTTP ${response.status}: ${response.statusText}`)
+        );
       }
       const contentType = response.headers.get("content-type");
       if (!contentType || !contentType.includes("application/json")) {
-        return null as T;
+        return throwError(() => new Error("Response is not JSON"));
       }
-      return response.json() as T;
+      return from(response.json()) as Observable<T>;
     }),
     catchError((error: Error) => {
       if (error instanceof SyntaxError) {
