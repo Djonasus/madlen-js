@@ -82,9 +82,24 @@ export class SDUIComposer {
         return document.createElement("div");
     }
     applyStyles(element, styles, version) {
+        const computedStyles = window.getComputedStyle(element);
         Object.entries(styles).forEach(([key, value]) => {
             const cssProperty = key.replace(/([A-Z])/g, "-$1").toLowerCase();
-            element.style[cssProperty] = value;
+            const cssValue = computedStyles.getPropertyValue(cssProperty);
+            const isSetInCSS = cssValue && cssValue.trim() !== "";
+            if (!isSetInCSS || cssValue !== String(value)) {
+                element.style[cssProperty] = value;
+            }
+            else {
+                if (cssProperty === "border-radius" ||
+                    cssProperty === "padding" ||
+                    cssProperty === "margin") {
+                    element.style[cssProperty] = value;
+                }
+                else {
+                    element.style[cssProperty] = value;
+                }
+            }
         });
     }
     applyProps(element, props) {

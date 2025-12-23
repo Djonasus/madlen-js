@@ -159,10 +159,27 @@ export class SDUIComposer {
     styles: Record<string, any>,
     version?: string
   ): void {
+    const computedStyles = window.getComputedStyle(element);
+
     Object.entries(styles).forEach(([key, value]) => {
       const cssProperty = key.replace(/([A-Z])/g, "-$1").toLowerCase();
 
-      (element.style as any)[cssProperty] = value;
+      const cssValue = computedStyles.getPropertyValue(cssProperty);
+      const isSetInCSS = cssValue && cssValue.trim() !== "";
+
+      if (!isSetInCSS || cssValue !== String(value)) {
+        (element.style as any)[cssProperty] = value;
+      } else {
+        if (
+          cssProperty === "border-radius" ||
+          cssProperty === "padding" ||
+          cssProperty === "margin"
+        ) {
+          (element.style as any)[cssProperty] = value;
+        } else {
+          (element.style as any)[cssProperty] = value;
+        }
+      }
     });
   }
 
