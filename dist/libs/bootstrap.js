@@ -47,10 +47,10 @@ export class Bootstrap {
             .pipe(catchError((error) => {
             return throwError(() => new Error(`Failed to fetch layout: ${error.message}`));
         }), map((response) => {
-            if (!response || !response.component) {
-                throw new Error(`Invalid layout response: missing 'component' field. Received: ${JSON.stringify(response)}`);
+            if (!response || !response.entryPoint) {
+                throw new Error(`Invalid layout response: missing 'entryPoint' field. Received: ${JSON.stringify(response)}`);
             }
-            return response.component;
+            return response.entryPoint;
         }), switchMap((layout) => {
             if (!layout || !layout.type) {
                 return throwError(() => new Error(`Invalid layout data: missing 'type' field. Received: ${JSON.stringify(layout)}`));

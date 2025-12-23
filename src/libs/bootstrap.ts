@@ -55,7 +55,7 @@ export class Bootstrap {
     }
 
     return this.httpService
-      .get<{ component: ComponentDefinition }>(`${this.apiUrl}`)
+      .get<{ entryPoint: ComponentDefinition }>(`${this.apiUrl}`)
       .pipe(
         catchError((error: Error) => {
           return throwError(
@@ -63,14 +63,14 @@ export class Bootstrap {
           );
         }),
         map((response) => {
-          if (!response || !response.component) {
+          if (!response || !response.entryPoint) {
             throw new Error(
-              `Invalid layout response: missing 'component' field. Received: ${JSON.stringify(
+              `Invalid layout response: missing 'entryPoint' field. Received: ${JSON.stringify(
                 response
               )}`
             );
           }
-          return response.component;
+          return response.entryPoint;
         }),
         switchMap((layout) => {
           if (!layout || !layout.type) {
