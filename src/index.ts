@@ -16,3 +16,5 @@ export {
   getWebpackComposerOptions,
   getWebpackComposerOptionsCustom,
 } from "./configs/webpack";
+export { module, createModule } from "./utils/module-builder";
+export type { ModuleBuilderOptions } from "./utils/module-builder";
