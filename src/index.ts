@@ -3,6 +3,7 @@ export * from "./libs/component";
 export * from "./libs/http";
 export * from "./libs/module-loader";
 export * from "./libs/composer";
+export * from "./libs/bootstrap";
 
 // TEST EXAMPLE
 

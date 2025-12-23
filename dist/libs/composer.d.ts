@@ -1,3 +1,4 @@
+import { Observable } from "rxjs";
 import { ComponentPool } from "./component";
 import { ModuleLoader } from "./module-loader";
 export interface ComponentDefinition {
@@ -18,12 +19,12 @@ export declare class SDUIComposer {
     private globalComponentPool;
     private modulePathResolver;
     constructor(options?: ComposerOptions);
-    compose(json: ComponentDefinition): Promise<HTMLElement>;
+    compose(json: ComponentDefinition): Observable<HTMLElement>;
     private createElementFromTemplate;
     private applyStyles;
     private applyProps;
     private isStandardAttribute;
-    composeMultiple(definitions: ComponentDefinition[], container?: HTMLElement): Promise<HTMLElement>;
+    composeMultiple(definitions: ComponentDefinition[], container?: HTMLElement): Observable<HTMLElement>;
 }
 export declare const composer: SDUIComposer;
 //# sourceMappingURL=composer.d.ts.map
