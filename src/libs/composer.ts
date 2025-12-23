@@ -1,5 +1,7 @@
 import { Observable, from, forkJoin, of, throwError } from "rxjs";
 import { switchMap, map, catchError } from "rxjs/operators";
+import { Observable, from, forkJoin, of, throwError } from "rxjs";
+import { switchMap, map, catchError } from "rxjs/operators";
 import { ComponentPool, globalComponentPool } from "./component";
 import { ModuleLoader, ModuleDefinition, moduleLoader } from "./module-loader";
 
@@ -134,10 +136,66 @@ export class SDUIComposer {
               )
           );
         }
+        const ComponentClass = componentPool.get(json.type);
+        if (!ComponentClass) {
+          const poolName = module ? `module ${json.moduleId}` : "global";
+          // #region agent log
+          fetch(
+            "http://127.0.0.1:7242/ingest/56b6cbd4-937e-49c5-bfa8-a789eb16c032",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                location: "composer.ts:52",
+                message: "component not found error",
+                data: { type: json.type, poolName, moduleId: json.moduleId },
+                timestamp: Date.now(),
+                sessionId: "debug-session",
+                runId: "run1",
+                hypothesisId: "A",
+              }),
+            }
+          ).catch(() => {});
+          // #endregion
+          return throwError(
+            () =>
+              new Error(
+                `Component ${json.type} not found in ${poolName} component pool`
+              )
+          );
+        }
 
         const componentMetadata = componentPool.getMetadata(json.type);
         const componentVersion = json.version || componentMetadata?.version;
+        const componentMetadata = componentPool.getMetadata(json.type);
+        const componentVersion = json.version || componentMetadata?.version;
 
+        return from(componentPool.loadTemplate(json.type)).pipe(
+          map((template) => {
+            // #region agent log
+            fetch(
+              "http://127.0.0.1:7242/ingest/56b6cbd4-937e-49c5-bfa8-a789eb16c032",
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  location: "composer.ts:63",
+                  message: "template loaded",
+                  data: {
+                    type: json.type,
+                    templateLength: template.length,
+                    hasChildren: !!json.children,
+                    childrenCount: json.children?.length || 0,
+                  },
+                  timestamp: Date.now(),
+                  sessionId: "debug-session",
+                  runId: "run1",
+                  hypothesisId: "C",
+                }),
+              }
+            ).catch(() => {});
+            // #endregion
+            const element = this.createElementFromTemplate(template);
         return from(componentPool.loadTemplate(json.type)).pipe(
           map((template) => {
             // #region agent log
@@ -172,7 +230,17 @@ export class SDUIComposer {
                 element.setAttribute("data-component-module", json.moduleId);
               }
             }
+            if (componentVersion) {
+              element.setAttribute("data-component-version", componentVersion);
+              element.setAttribute("data-component-type", json.type);
+              if (json.moduleId) {
+                element.setAttribute("data-component-module", json.moduleId);
+              }
+            }
 
+            if (json.styles) {
+              this.applyStyles(element, json.styles, componentVersion);
+            }
             if (json.styles) {
               this.applyStyles(element, json.styles, componentVersion);
             }
@@ -180,7 +248,118 @@ export class SDUIComposer {
             if (json.props) {
               this.applyProps(element, json.props);
             }
+            if (json.props) {
+              this.applyProps(element, json.props);
+            }
 
+            return { element, children: json.children };
+          }),
+          switchMap(({ element, children }) => {
+            // #region agent log
+            fetch(
+              "http://127.0.0.1:7242/ingest/56b6cbd4-937e-49c5-bfa8-a789eb16c032",
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  location: "composer.ts:84",
+                  message: "processing children",
+                  data: {
+                    hasChildren: !!children,
+                    childrenLength: children?.length || 0,
+                    childrenIsArray: Array.isArray(children),
+                  },
+                  timestamp: Date.now(),
+                  sessionId: "debug-session",
+                  runId: "run1",
+                  hypothesisId: "C",
+                }),
+              }
+            ).catch(() => {});
+            // #endregion
+            if (children && children.length > 0) {
+              const children$ = children.map((child) => this.compose(child));
+              // #region agent log
+              fetch(
+                "http://127.0.0.1:7242/ingest/56b6cbd4-937e-49c5-bfa8-a789eb16c032",
+                {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    location: "composer.ts:86",
+                    message: "forkJoin children",
+                    data: { childrenCount: children$.length },
+                    timestamp: Date.now(),
+                    sessionId: "debug-session",
+                    runId: "run1",
+                    hypothesisId: "C",
+                  }),
+                }
+              ).catch(() => {});
+              // #endregion
+              return forkJoin(children$).pipe(
+                map((childElements) => {
+                  // #region agent log
+                  fetch(
+                    "http://127.0.0.1:7242/ingest/56b6cbd4-937e-49c5-bfa8-a789eb16c032",
+                    {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        location: "composer.ts:88",
+                        message: "children composed",
+                        data: { childElementsCount: childElements.length },
+                        timestamp: Date.now(),
+                        sessionId: "debug-session",
+                        runId: "run1",
+                        hypothesisId: "D",
+                      }),
+                    }
+                  ).catch(() => {});
+                  // #endregion
+                  childElements.forEach((childElement) => {
+                    element.appendChild(childElement);
+                  });
+                  return element;
+                })
+              );
+            }
+            return of(element);
+          })
+        );
+      }),
+      catchError((error: any) => {
+        // #region agent log
+        fetch(
+          "http://127.0.0.1:7242/ingest/56b6cbd4-937e-49c5-bfa8-a789eb16c032",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              location: "composer.ts:100",
+              message: "catchError triggered",
+              data: {
+                errorType: typeof error,
+                errorMessage: error?.message,
+                errorName: error?.name,
+                isError: error instanceof Error,
+                componentType: json.type,
+              },
+              timestamp: Date.now(),
+              sessionId: "debug-session",
+              runId: "run1",
+              hypothesisId: "A",
+            }),
+          }
+        ).catch(() => {});
+        // #endregion
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
+        return throwError(
+          () => new Error(`Failed to compose component: ${errorMessage}`)
+        );
+      })
+    );
             return { element, children: json.children };
           }),
           switchMap(({ element, children }) => {
@@ -359,11 +538,26 @@ export class SDUIComposer {
   }
 
   composeMultiple(
+  composeMultiple(
     definitions: ComponentDefinition[],
     container?: HTMLElement
   ): Observable<HTMLElement> {
+  ): Observable<HTMLElement> {
     const root = container || document.createElement("div");
 
+    if (definitions.length === 0) {
+      return of(root);
+    }
+
+    const elements$ = definitions.map((definition) => this.compose(definition));
+    return forkJoin(elements$).pipe(
+      map((elements) => {
+        elements.forEach((element) => {
+          root.appendChild(element);
+        });
+        return root;
+      })
+    );
     if (definitions.length === 0) {
       return of(root);
     }
