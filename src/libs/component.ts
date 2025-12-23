@@ -83,11 +83,19 @@ export class ComponentPool {
 
     const metadata = this.metadata.get(selector);
     if (metadata?.moduleUrl) {
-      const baseUrl = metadata.moduleUrl.substring(
-        0,
-        metadata.moduleUrl.lastIndexOf("/")
-      );
-      return new URL(templateUrl, baseUrl + "/").href;
+      if (templateUrl.startsWith("/")) {
+        return templateUrl;
+      }
+      return new URL(templateUrl, metadata.moduleUrl + "/").href;
+    }
+
+    if (templateUrl.startsWith("./") || templateUrl.startsWith("../")) {
+      try {
+        const baseUrl = window.location.origin + "/src/modules/";
+        return new URL(templateUrl, baseUrl).href;
+      } catch {
+        return templateUrl;
+      }
     }
 
     return templateUrl;

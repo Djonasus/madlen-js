@@ -29,6 +29,11 @@ export class SDUIComposer {
             }
             const componentMetadata = componentPool.getMetadata(json.type);
             const componentVersion = json.version || componentMetadata?.version;
+            if (json.moduleId && module && componentMetadata) {
+                const modulePath = this.modulePathResolver(json.moduleId);
+                const moduleBaseUrl = modulePath.substring(0, modulePath.lastIndexOf("/"));
+                componentMetadata.moduleUrl = moduleBaseUrl;
+            }
             return from(componentPool.loadTemplate(json.type)).pipe(map((template) => {
                 const element = this.createElementFromTemplate(template);
                 if (componentVersion) {
