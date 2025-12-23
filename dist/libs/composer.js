@@ -85,8 +85,11 @@ export class SDUIComposer {
         if (!template || template.trim() === "") {
             throw new Error("Template is empty");
         }
-        const trimmedTemplate = template.trim();
-        console.log(`[Composer] createElementFromTemplate input:`, trimmedTemplate);
+        let trimmedTemplate = template.trim();
+        trimmedTemplate = trimmedTemplate.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "");
+        trimmedTemplate = trimmedTemplate.replace(/<(link|meta|style)[^>]*\/?>/gi, "");
+        trimmedTemplate = trimmedTemplate.trim();
+        console.log(`[Composer] createElementFromTemplate input (cleaned):`, trimmedTemplate);
         const tempContainer = document.createElement("div");
         tempContainer.innerHTML = trimmedTemplate;
         console.log(`[Composer] tempContainer children count:`, tempContainer.children.length);
@@ -97,6 +100,15 @@ export class SDUIComposer {
             return element;
         }
         if (tempContainer.children.length > 1) {
+            // Если несколько элементов, пытаемся найти основной (не script, не style)
+            const mainElement = Array.from(tempContainer.children).find((el) => el.tagName !== "SCRIPT" &&
+                el.tagName !== "STYLE" &&
+                el.tagName !== "LINK" &&
+                el.tagName !== "META");
+            if (mainElement) {
+                console.log(`[Composer] Returning main element:`, mainElement.tagName);
+                return mainElement;
+            }
             const wrapper = document.createElement("div");
             while (tempContainer.firstChild) {
                 wrapper.appendChild(tempContainer.firstChild);
