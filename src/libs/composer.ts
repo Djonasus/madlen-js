@@ -33,32 +33,6 @@ export class SDUIComposer {
   }
 
   compose(json: ComponentDefinition): Observable<HTMLElement> {
-    // #region agent log
-    fetch("http://127.0.0.1:7242/ingest/56b6cbd4-937e-49c5-bfa8-a789eb16c032", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        location: "composer.ts:35",
-        message: "compose entry",
-        data: {
-          json: json,
-          type: json?.type,
-          typeIsUndefined: json?.type === undefined,
-          typeIsNull: json?.type === null,
-          typeIsEmpty: json?.type === "",
-          moduleId: json?.moduleId,
-          hasChildren: !!json?.children,
-          childrenCount: json?.children?.length || 0,
-          jsonKeys: json ? Object.keys(json) : [],
-        },
-        timestamp: Date.now(),
-        sessionId: "debug-session",
-        runId: "run1",
-        hypothesisId: "A",
-      }),
-    }).catch(() => {});
-    // #endregion
-
     if (!json || !json.type) {
       return throwError(
         () =>
@@ -80,28 +54,6 @@ export class SDUIComposer {
 
     return module$.pipe(
       switchMap((module: ModuleDefinition | undefined) => {
-        // #region agent log
-        fetch(
-          "http://127.0.0.1:7242/ingest/56b6cbd4-937e-49c5-bfa8-a789eb16c032",
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              location: "composer.ts:46",
-              message: "after module load",
-              data: {
-                hasModule: !!module,
-                moduleId: json.moduleId,
-                componentType: json.type,
-              },
-              timestamp: Date.now(),
-              sessionId: "debug-session",
-              runId: "run1",
-              hypothesisId: "D",
-            }),
-          }
-        ).catch(() => {});
-        // #endregion
         const componentPool = module
           ? module.componentPool
           : this.globalComponentPool;
@@ -109,24 +61,6 @@ export class SDUIComposer {
         const ComponentClass = componentPool.get(json.type);
         if (!ComponentClass) {
           const poolName = module ? `module ${json.moduleId}` : "global";
-          // #region agent log
-          fetch(
-            "http://127.0.0.1:7242/ingest/56b6cbd4-937e-49c5-bfa8-a789eb16c032",
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                location: "composer.ts:52",
-                message: "component not found error",
-                data: { type: json.type, poolName, moduleId: json.moduleId },
-                timestamp: Date.now(),
-                sessionId: "debug-session",
-                runId: "run1",
-                hypothesisId: "A",
-              }),
-            }
-          ).catch(() => {});
-          // #endregion
           return throwError(
             () =>
               new Error(
@@ -140,29 +74,6 @@ export class SDUIComposer {
 
         return from(componentPool.loadTemplate(json.type)).pipe(
           map((template) => {
-            // #region agent log
-            fetch(
-              "http://127.0.0.1:7242/ingest/56b6cbd4-937e-49c5-bfa8-a789eb16c032",
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  location: "composer.ts:63",
-                  message: "template loaded",
-                  data: {
-                    type: json.type,
-                    templateLength: template.length,
-                    hasChildren: !!json.children,
-                    childrenCount: json.children?.length || 0,
-                  },
-                  timestamp: Date.now(),
-                  sessionId: "debug-session",
-                  runId: "run1",
-                  hypothesisId: "C",
-                }),
-              }
-            ).catch(() => {});
-            // #endregion
             const element = this.createElementFromTemplate(template);
 
             if (componentVersion) {
@@ -184,68 +95,10 @@ export class SDUIComposer {
             return { element, children: json.children };
           }),
           switchMap(({ element, children }) => {
-            // #region agent log
-            fetch(
-              "http://127.0.0.1:7242/ingest/56b6cbd4-937e-49c5-bfa8-a789eb16c032",
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  location: "composer.ts:84",
-                  message: "processing children",
-                  data: {
-                    hasChildren: !!children,
-                    childrenLength: children?.length || 0,
-                    childrenIsArray: Array.isArray(children),
-                  },
-                  timestamp: Date.now(),
-                  sessionId: "debug-session",
-                  runId: "run1",
-                  hypothesisId: "C",
-                }),
-              }
-            ).catch(() => {});
-            // #endregion
             if (children && children.length > 0) {
               const children$ = children.map((child) => this.compose(child));
-              // #region agent log
-              fetch(
-                "http://127.0.0.1:7242/ingest/56b6cbd4-937e-49c5-bfa8-a789eb16c032",
-                {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    location: "composer.ts:86",
-                    message: "forkJoin children",
-                    data: { childrenCount: children$.length },
-                    timestamp: Date.now(),
-                    sessionId: "debug-session",
-                    runId: "run1",
-                    hypothesisId: "C",
-                  }),
-                }
-              ).catch(() => {});
-              // #endregion
               return forkJoin(children$).pipe(
                 map((childElements) => {
-                  // #region agent log
-                  fetch(
-                    "http://127.0.0.1:7242/ingest/56b6cbd4-937e-49c5-bfa8-a789eb16c032",
-                    {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({
-                        location: "composer.ts:88",
-                        message: "children composed",
-                        data: { childElementsCount: childElements.length },
-                        timestamp: Date.now(),
-                        sessionId: "debug-session",
-                        runId: "run1",
-                        hypothesisId: "D",
-                      }),
-                    }
-                  ).catch(() => {});
-                  // #endregion
                   childElements.forEach((childElement) => {
                     element.appendChild(childElement);
                   });
@@ -258,30 +111,6 @@ export class SDUIComposer {
         );
       }),
       catchError((error: any) => {
-        // #region agent log
-        fetch(
-          "http://127.0.0.1:7242/ingest/56b6cbd4-937e-49c5-bfa8-a789eb16c032",
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              location: "composer.ts:100",
-              message: "catchError triggered",
-              data: {
-                errorType: typeof error,
-                errorMessage: error?.message,
-                errorName: error?.name,
-                isError: error instanceof Error,
-                componentType: json.type,
-              },
-              timestamp: Date.now(),
-              sessionId: "debug-session",
-              runId: "run1",
-              hypothesisId: "A",
-            }),
-          }
-        ).catch(() => {});
-        // #endregion
         const errorMessage =
           error instanceof Error ? error.message : String(error);
         return throwError(
