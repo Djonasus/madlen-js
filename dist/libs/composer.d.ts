@@ -23,7 +23,9 @@ export declare class SDUIComposer {
     private createElementFromTemplate;
     private applyStyles;
     private applyProps;
+    private interpolateProps;
     private isStandardAttribute;
+    private createComponentInstance;
     composeMultiple(definitions: ComponentDefinition[], container?: HTMLElement): Observable<HTMLElement>;
 }
 export declare const composer: SDUIComposer;

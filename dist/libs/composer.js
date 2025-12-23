@@ -1,6 +1,6 @@
 import { from, forkJoin, of, throwError } from "rxjs";
 import { switchMap, map, catchError } from "rxjs/operators";
-import { globalComponentPool } from "./component";
+import { globalComponentPool, } from "./component";
 import { moduleLoader } from "./module-loader";
 export class SDUIComposer {
     constructor(options = {}) {
@@ -44,6 +44,10 @@ export class SDUIComposer {
                 if (json.props) {
                     this.applyProps(element, json.props);
                 }
+                // Создаем экземпляр компонента и инициализируем его
+                const componentInstance = this.createComponentInstance(ComponentClass, json.props, element);
+                // Сохраняем экземпляр компонента в элементе для доступа
+                element.__componentInstance = componentInstance;
                 return { element, children: json.children };
             }), switchMap(({ element, children }) => {
                 if (children && children.length > 0) {
@@ -84,6 +88,7 @@ export class SDUIComposer {
         });
     }
     applyProps(element, props) {
+        element.setAttribute("data-props", JSON.stringify(props));
         Object.entries(props).forEach(([key, value]) => {
             if (key.startsWith("data-")) {
                 element.setAttribute(key, String(value));
@@ -96,6 +101,35 @@ export class SDUIComposer {
             }
             else {
                 element.setAttribute(`data-${key}`, String(value));
+            }
+        });
+        this.interpolateProps(element, props);
+    }
+    interpolateProps(element, props) {
+        const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, null);
+        let node;
+        while ((node = walker.nextNode())) {
+            if (node.textContent) {
+                let text = node.textContent;
+                text = text.replace(/\{\{(\w+)\}\}/g, (match, propName) => {
+                    return props[propName] !== undefined
+                        ? String(props[propName])
+                        : match;
+                });
+                if (text !== node.textContent) {
+                    node.textContent = text;
+                }
+            }
+        }
+        Array.from(element.attributes).forEach((attr) => {
+            if (attr.value.includes("{{")) {
+                let value = attr.value;
+                value = value.replace(/\{\{(\w+)\}\}/g, (match, propName) => {
+                    return props[propName] !== undefined
+                        ? String(props[propName])
+                        : match;
+                });
+                element.setAttribute(attr.name, value);
             }
         });
     }
@@ -119,6 +153,19 @@ export class SDUIComposer {
             "role",
         ];
         return standardAttributes.includes(key.toLowerCase());
+    }
+    createComponentInstance(ComponentClass, props, element) {
+        const instance = new ComponentClass();
+        if (props) {
+            instance.props = props;
+        }
+        if (element) {
+            instance.element = element;
+        }
+        if (typeof instance.onInit === "function") {
+            instance.onInit();
+        }
+        return instance;
     }
     composeMultiple(definitions, container) {
         const root = container || document.createElement("div");

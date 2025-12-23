@@ -2,6 +2,18 @@ import { ModuleDefinition } from "./module-loader";
 
 type Constructor<T = any> = new (...args: any[]) => T;
 
+export interface ComponentProps {
+  [key: string]: any;
+}
+
+export interface ComponentInstance {
+  props?: ComponentProps;
+  element?: HTMLElement;
+  onInit?: () => void;
+  onDestroy?: () => void;
+  onPropsChange?: (props: ComponentProps) => void;
+}
+
 interface ComponentOptions {
   selector: string;
   templateUrl?: string;

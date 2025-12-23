@@ -1,6 +1,11 @@
 import { Observable, from, forkJoin, of, throwError } from "rxjs";
 import { switchMap, map, catchError } from "rxjs/operators";
-import { ComponentPool, globalComponentPool } from "./component";
+import {
+  ComponentPool,
+  globalComponentPool,
+  ComponentInstance,
+  ComponentProps,
+} from "./component";
 import { ModuleLoader, ModuleDefinition, moduleLoader } from "./module-loader";
 
 export interface ComponentDefinition {
@@ -92,6 +97,16 @@ export class SDUIComposer {
               this.applyProps(element, json.props);
             }
 
+            // Создаем экземпляр компонента и инициализируем его
+            const componentInstance = this.createComponentInstance(
+              ComponentClass,
+              json.props,
+              element
+            );
+
+            // Сохраняем экземпляр компонента в элементе для доступа
+            (element as any).__componentInstance = componentInstance;
+
             return { element, children: json.children };
           }),
           switchMap(({ element, children }) => {
@@ -152,6 +167,8 @@ export class SDUIComposer {
   }
 
   private applyProps(element: HTMLElement, props: Record<string, any>): void {
+    element.setAttribute("data-props", JSON.stringify(props));
+
     Object.entries(props).forEach(([key, value]) => {
       if (key.startsWith("data-")) {
         element.setAttribute(key, String(value));
@@ -161,6 +178,46 @@ export class SDUIComposer {
         element.setAttribute(key, String(value));
       } else {
         element.setAttribute(`data-${key}`, String(value));
+      }
+    });
+
+    this.interpolateProps(element, props);
+  }
+
+  private interpolateProps(
+    element: HTMLElement,
+    props: Record<string, any>
+  ): void {
+    const walker = document.createTreeWalker(
+      element,
+      NodeFilter.SHOW_TEXT,
+      null
+    );
+
+    let node: Node | null;
+    while ((node = walker.nextNode())) {
+      if (node.textContent) {
+        let text = node.textContent;
+        text = text.replace(/\{\{(\w+)\}\}/g, (match, propName) => {
+          return props[propName] !== undefined
+            ? String(props[propName])
+            : match;
+        });
+        if (text !== node.textContent) {
+          node.textContent = text;
+        }
+      }
+    }
+
+    Array.from(element.attributes).forEach((attr) => {
+      if (attr.value.includes("{{")) {
+        let value = attr.value;
+        value = value.replace(/\{\{(\w+)\}\}/g, (match, propName) => {
+          return props[propName] !== undefined
+            ? String(props[propName])
+            : match;
+        });
+        element.setAttribute(attr.name, value);
       }
     });
   }
@@ -185,6 +242,27 @@ export class SDUIComposer {
       "role",
     ];
     return standardAttributes.includes(key.toLowerCase());
+  }
+
+  private createComponentInstance(
+    ComponentClass: any,
+    props?: ComponentProps,
+    element?: HTMLElement
+  ): ComponentInstance {
+    const instance = new ComponentClass();
+
+    if (props) {
+      instance.props = props;
+    }
+    if (element) {
+      instance.element = element;
+    }
+
+    if (typeof instance.onInit === "function") {
+      instance.onInit();
+    }
+
+    return instance;
   }
 
   composeMultiple(
