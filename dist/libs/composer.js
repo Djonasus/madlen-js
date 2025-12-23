@@ -64,8 +64,10 @@ export class SDUIComposer {
                 if (children && children.length > 0) {
                     const children$ = children.map((child) => this.compose(child));
                     return forkJoin(children$).pipe(map((childElements) => {
+                        const childrenContainer = this.findChildrenContainer(element);
+                        const targetElement = childrenContainer || element;
                         childElements.forEach((childElement) => {
-                            element.appendChild(childElement);
+                            targetElement.appendChild(childElement);
                         });
                         return element;
                     }));
@@ -105,6 +107,10 @@ export class SDUIComposer {
             return wrapper;
         }
         throw new Error(`Template does not contain any HTML elements. Template content: "${template}"`);
+    }
+    findChildrenContainer(element) {
+        const slot = element.querySelector("[data-children], [madlen-children], .children-container");
+        return slot || null;
     }
     applyStyles(element, styles, version) {
         const computedStyles = window.getComputedStyle(element);

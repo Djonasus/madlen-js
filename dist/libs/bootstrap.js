@@ -43,7 +43,7 @@ export class Bootstrap {
             return throwError(() => new Error(`Container with id ${this.containerId} not found`));
         }
         return this.httpService
-            .get(`${this.apiUrl}/layout`)
+            .get(`${this.apiUrl}`)
             .pipe(catchError((error) => {
             return throwError(() => new Error(`Failed to fetch layout: ${error.message}`));
         }), map((response) => {

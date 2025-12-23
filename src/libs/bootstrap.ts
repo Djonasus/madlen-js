@@ -55,7 +55,7 @@ export class Bootstrap {
     }
 
     return this.httpService
-      .get<{ component: ComponentDefinition }>(`${this.apiUrl}/layout`)
+      .get<{ component: ComponentDefinition }>(`${this.apiUrl}`)
       .pipe(
         catchError((error: Error) => {
           return throwError(

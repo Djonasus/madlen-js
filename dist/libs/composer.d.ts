@@ -21,6 +21,7 @@ export declare class SDUIComposer {
     constructor(options?: ComposerOptions);
     compose(json: ComponentDefinition): Observable<HTMLElement>;
     private createElementFromTemplate;
+    private findChildrenContainer;
     private applyStyles;
     private applyProps;
     private interpolateProps;
