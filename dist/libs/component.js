@@ -20,13 +20,21 @@ export class ComponentPool {
         }
         if (metadata.templateUrl) {
             const templateUrl = this.resolveTemplateUrl(selector, metadata.templateUrl);
-            const response = await fetch(templateUrl);
-            if (!response.ok) {
-                throw new Error(`Failed to load template: ${templateUrl}`);
+            try {
+                const response = await fetch(templateUrl);
+                if (!response.ok) {
+                    throw new Error(`Failed to load template from ${templateUrl}: ${response.status} ${response.statusText}`);
+                }
+                const content = await response.text();
+                if (!content || content.trim() === "") {
+                    throw new Error(`Template file ${templateUrl} is empty`);
+                }
+                metadata.templateContent = content;
+                return content;
             }
-            const content = await response.text();
-            metadata.templateContent = content;
-            return content;
+            catch (error) {
+                throw new Error(`Failed to load template from ${templateUrl}: ${error.message}`);
+            }
         }
         throw new Error(`No template found for component ${selector}`);
     }

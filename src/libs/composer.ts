@@ -91,6 +91,11 @@ export class SDUIComposer {
 
         return from(componentPool.loadTemplate(json.type)).pipe(
           map((template) => {
+            if (!template || template.trim() === "") {
+              throw new Error(
+                `Template is empty for component ${json.type}. Check templateUrl or template property.`
+              );
+            }
             const element = this.createElementFromTemplate(template);
 
             if (componentVersion) {
@@ -148,6 +153,10 @@ export class SDUIComposer {
   }
 
   private createElementFromTemplate(template: string): HTMLElement {
+    if (!template || template.trim() === "") {
+      throw new Error("Template is empty");
+    }
+
     const tempContainer = document.createElement("div");
     tempContainer.innerHTML = template.trim();
 
@@ -163,7 +172,10 @@ export class SDUIComposer {
       return wrapper;
     }
 
-    return document.createElement("div");
+    // Если шаблон не содержит элементов, это ошибка
+    throw new Error(
+      `Template does not contain any HTML elements. Template content: "${template}"`
+    );
   }
 
   private applyStyles(
