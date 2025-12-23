@@ -9,10 +9,12 @@ import {
 import { inject } from "./di";
 import { HttpService } from "./http";
 import { createDefaultModuleResolver } from "../utils/module-resolvers";
+import { ModuleDefinition, moduleLoader } from "./module-loader";
 
 export interface BootstrapOptions {
   composerOptions?: ComposerOptions;
   autoDetectEnvironment?: boolean;
+  preloadModules?: ModuleDefinition[];
 }
 
 export class Bootstrap {
@@ -38,6 +40,12 @@ export class Bootstrap {
       }
     } else {
       this.composer = composer;
+    }
+
+    if (options?.preloadModules && options.preloadModules.length > 0) {
+      options.preloadModules.forEach((module) => {
+        moduleLoader.preloadModule(module);
+      });
     }
   }
 

@@ -13,6 +13,7 @@ import { composer, SDUIComposer, } from "./composer";
 import { inject } from "./di";
 import { HttpService } from "./http";
 import { createDefaultModuleResolver } from "../utils/module-resolvers";
+import { moduleLoader } from "./module-loader";
 export class Bootstrap {
     constructor(apiUrl, containerId, options) {
         this.apiUrl = apiUrl;
@@ -31,6 +32,11 @@ export class Bootstrap {
         }
         else {
             this.composer = composer;
+        }
+        if (options?.preloadModules && options.preloadModules.length > 0) {
+            options.preloadModules.forEach((module) => {
+                moduleLoader.preloadModule(module);
+            });
         }
     }
     /**

@@ -15,6 +15,12 @@ export declare class ModuleLoader {
     private doLoadModule;
     private validateModule;
     private getAlternateExtensionPath;
+    /**
+     * Предзагружает модуль без необходимости указывать путь
+     * Используется когда модуль уже импортирован статически
+     * Не блокирует ленивую загрузку - если модуль не предзагружен, он загрузится по требованию
+     */
+    preloadModule(module: ModuleDefinition): void;
     getModule(moduleId: string): ModuleDefinition | undefined;
     isLoaded(moduleId: string): boolean;
     unloadModule(moduleId: string): Promise<void>;

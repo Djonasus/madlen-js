@@ -113,6 +113,28 @@ export class ModuleLoader {
     return null;
   }
 
+  /**
+   * Предзагружает модуль без необходимости указывать путь
+   * Используется когда модуль уже импортирован статически
+   * Не блокирует ленивую загрузку - если модуль не предзагружен, он загрузится по требованию
+   */
+  preloadModule(module: ModuleDefinition): void {
+    if (this.loadedModules.has(module.id)) {
+      return;
+    }
+
+    this.loadedModules.set(module.id, module);
+
+    if (module.init) {
+      Promise.resolve(module.init()).catch((err) => {
+        console.error(
+          `Failed to initialize preloaded module ${module.id}:`,
+          err
+        );
+      });
+    }
+  }
+
   getModule(moduleId: string): ModuleDefinition | undefined {
     return this.loadedModules.get(moduleId);
   }

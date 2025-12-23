@@ -1,8 +1,10 @@
 import { Observable } from "rxjs";
 import { ComposerOptions } from "./composer";
+import { ModuleDefinition } from "./module-loader";
 export interface BootstrapOptions {
     composerOptions?: ComposerOptions;
     autoDetectEnvironment?: boolean;
+    preloadModules?: ModuleDefinition[];
 }
 export declare class Bootstrap {
     private apiUrl;
