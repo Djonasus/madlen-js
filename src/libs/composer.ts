@@ -103,7 +103,13 @@ export class SDUIComposer {
                 `Template is empty for component ${json.type}. Check templateUrl or template property.`
               );
             }
+            console.log(`[Composer] Template for ${json.type}:`, template);
             const element = this.createElementFromTemplate(template);
+            console.log(
+              `[Composer] Created element tagName:`,
+              element.tagName,
+              element
+            );
 
             if (componentVersion) {
               element.setAttribute("data-component-version", componentVersion);
@@ -164,11 +170,22 @@ export class SDUIComposer {
       throw new Error("Template is empty");
     }
 
+    const trimmedTemplate = template.trim();
+    console.log(`[Composer] createElementFromTemplate input:`, trimmedTemplate);
+
     const tempContainer = document.createElement("div");
-    tempContainer.innerHTML = template.trim();
+    tempContainer.innerHTML = trimmedTemplate;
+
+    console.log(
+      `[Composer] tempContainer children count:`,
+      tempContainer.children.length
+    );
+    console.log(`[Composer] tempContainer innerHTML:`, tempContainer.innerHTML);
 
     if (tempContainer.children.length === 1) {
-      return tempContainer.firstElementChild as HTMLElement;
+      const element = tempContainer.firstElementChild as HTMLElement;
+      console.log(`[Composer] Returning single child:`, element.tagName);
+      return element;
     }
 
     if (tempContainer.children.length > 1) {
@@ -176,6 +193,9 @@ export class SDUIComposer {
       while (tempContainer.firstChild) {
         wrapper.appendChild(tempContainer.firstChild);
       }
+      console.log(
+        `[Composer] Returning wrapper with ${wrapper.children.length} children`
+      );
       return wrapper;
     }
 

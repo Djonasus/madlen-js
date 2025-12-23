@@ -62,7 +62,9 @@ export class ComponentPool {
         metadata.templateUrl
       );
       console.log(`[ComponentPool] Loading template from: ${templateUrl}`);
-      console.log(`[ComponentPool] Original templateUrl: ${metadata.templateUrl}`);
+      console.log(
+        `[ComponentPool] Original templateUrl: ${metadata.templateUrl}`
+      );
       console.log(`[ComponentPool] moduleUrl: ${metadata.moduleUrl}`);
       try {
         const response = await fetch(templateUrl);
@@ -73,7 +75,10 @@ export class ComponentPool {
           );
         }
         const content = await response.text();
-        console.log(`[ComponentPool] Template content loaded (length: ${content.length}):`, content.substring(0, 200));
+        console.log(
+          `[ComponentPool] Template content loaded (length: ${content.length}):`,
+          content.substring(0, 200)
+        );
         if (!content || content.trim() === "") {
           throw new Error(`Template file ${templateUrl} is empty`);
         }
