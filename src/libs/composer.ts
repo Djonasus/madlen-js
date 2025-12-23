@@ -79,11 +79,14 @@ export class SDUIComposer {
 
         if (json.moduleId && module && componentMetadata) {
           const modulePath = this.modulePathResolver(json.moduleId);
-          const moduleBaseUrl = modulePath.substring(
+          const moduleBasePath = modulePath.substring(
             0,
             modulePath.lastIndexOf("/")
           );
-          componentMetadata.moduleUrl = moduleBaseUrl;
+          componentMetadata.moduleUrl = new URL(
+            moduleBasePath,
+            window.location.origin
+          ).href;
         }
 
         return from(componentPool.loadTemplate(json.type)).pipe(

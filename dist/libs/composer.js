@@ -31,8 +31,8 @@ export class SDUIComposer {
             const componentVersion = json.version || componentMetadata?.version;
             if (json.moduleId && module && componentMetadata) {
                 const modulePath = this.modulePathResolver(json.moduleId);
-                const moduleBaseUrl = modulePath.substring(0, modulePath.lastIndexOf("/"));
-                componentMetadata.moduleUrl = moduleBaseUrl;
+                const moduleBasePath = modulePath.substring(0, modulePath.lastIndexOf("/"));
+                componentMetadata.moduleUrl = new URL(moduleBasePath, window.location.origin).href;
             }
             return from(componentPool.loadTemplate(json.type)).pipe(map((template) => {
                 const element = this.createElementFromTemplate(template);
