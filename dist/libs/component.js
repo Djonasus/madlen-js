@@ -20,12 +20,17 @@ export class ComponentPool {
         }
         if (metadata.templateUrl) {
             const templateUrl = this.resolveTemplateUrl(selector, metadata.templateUrl);
+            console.log(`[ComponentPool] Loading template from: ${templateUrl}`);
+            console.log(`[ComponentPool] Original templateUrl: ${metadata.templateUrl}`);
+            console.log(`[ComponentPool] moduleUrl: ${metadata.moduleUrl}`);
             try {
                 const response = await fetch(templateUrl);
+                console.log(`[ComponentPool] Response status: ${response.status}`);
                 if (!response.ok) {
                     throw new Error(`Failed to load template from ${templateUrl}: ${response.status} ${response.statusText}`);
                 }
                 const content = await response.text();
+                console.log(`[ComponentPool] Template content loaded (length: ${content.length}):`, content.substring(0, 200));
                 if (!content || content.trim() === "") {
                     throw new Error(`Template file ${templateUrl} is empty`);
                 }
@@ -33,6 +38,7 @@ export class ComponentPool {
                 return content;
             }
             catch (error) {
+                console.error(`[ComponentPool] Error loading template:`, error);
                 throw new Error(`Failed to load template from ${templateUrl}: ${error.message}`);
             }
         }
