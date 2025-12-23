@@ -43,20 +43,9 @@ export class ComponentPool {
             templateUrl.startsWith("https://")) {
             return templateUrl;
         }
-        const isViteEnv = (() => {
-            try {
-                // eslint-disable-next-line @typescript-eslint/no-implied-eval
-                return new Function('try { return typeof import !== "undefined" && typeof import.meta !== "undefined" && import.meta.env !== undefined; } catch { return false; }')();
-            }
-            catch {
-                return false;
-            }
-        })();
         const metadata = this.metadata.get(selector);
         if (metadata?.moduleUrl) {
-            const needsRaw = isViteEnv &&
-                templateUrl.endsWith(".html") &&
-                !templateUrl.includes("?");
+            const needsRaw = templateUrl.endsWith(".html") && !templateUrl.includes("?");
             const withRaw = needsRaw ? `${templateUrl}?raw` : templateUrl;
             if (templateUrl.startsWith("/")) {
                 return withRaw;
@@ -64,17 +53,10 @@ export class ComponentPool {
             return new URL(withRaw, metadata.moduleUrl + "/").href;
         }
         if (templateUrl.startsWith("./") || templateUrl.startsWith("../")) {
-            try {
-                const baseUrl = window.location.origin + "/src/modules/";
-                const needsRaw = isViteEnv &&
-                    templateUrl.endsWith(".html") &&
-                    !templateUrl.includes("?");
-                const withRaw = needsRaw ? `${templateUrl}?raw` : templateUrl;
-                return new URL(withRaw, baseUrl).href;
-            }
-            catch {
-                return templateUrl;
-            }
+            const baseUrl = window.location.origin + "/src/modules/";
+            const needsRaw = templateUrl.endsWith(".html") && !templateUrl.includes("?");
+            const withRaw = needsRaw ? `${templateUrl}?raw` : templateUrl;
+            return new URL(withRaw, baseUrl).href;
         }
         return templateUrl;
     }
