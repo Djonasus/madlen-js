@@ -5,9 +5,9 @@ export * from "./libs/module-loader";
 export * from "./libs/composer";
 export * from "./libs/bootstrap";
 export * from "./utils/module-resolvers";
+export * from "./utils/module-builder";
 export * from "./configs";
 
-// Явные реэкспорты для лучшей совместимости с bundler'ами
 export {
   getViteComposerOptions,
   getViteComposerOptionsCustom,
