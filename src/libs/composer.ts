@@ -78,15 +78,22 @@ export class SDUIComposer {
         const componentVersion = json.version || componentMetadata?.version;
 
         if (json.moduleId && module && componentMetadata) {
-          const modulePath = this.modulePathResolver(json.moduleId);
-          const moduleBasePath = modulePath.substring(
-            0,
-            modulePath.lastIndexOf("/")
+          const modulePath = this.modulePathResolver(json.moduleId).replace(
+            /\\/g,
+            "/"
           );
-          componentMetadata.moduleUrl = new URL(
-            moduleBasePath,
-            window.location.origin
-          ).href;
+
+          let moduleDir = modulePath.substring(0, modulePath.lastIndexOf("/"));
+          if (moduleDir.endsWith("/index")) {
+            moduleDir = moduleDir.substring(
+              0,
+              moduleDir.length - "/index".length
+            );
+          }
+
+          const moduleBaseUrl = new URL(moduleDir + "/", window.location.origin)
+            .href;
+          componentMetadata.moduleUrl = moduleBaseUrl;
         }
 
         return from(componentPool.loadTemplate(json.type)).pipe(

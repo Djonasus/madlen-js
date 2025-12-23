@@ -30,9 +30,14 @@ export class SDUIComposer {
             const componentMetadata = componentPool.getMetadata(json.type);
             const componentVersion = json.version || componentMetadata?.version;
             if (json.moduleId && module && componentMetadata) {
-                const modulePath = this.modulePathResolver(json.moduleId);
-                const moduleBasePath = modulePath.substring(0, modulePath.lastIndexOf("/"));
-                componentMetadata.moduleUrl = new URL(moduleBasePath, window.location.origin).href;
+                const modulePath = this.modulePathResolver(json.moduleId).replace(/\\/g, "/");
+                let moduleDir = modulePath.substring(0, modulePath.lastIndexOf("/"));
+                if (moduleDir.endsWith("/index")) {
+                    moduleDir = moduleDir.substring(0, moduleDir.length - "/index".length);
+                }
+                const moduleBaseUrl = new URL(moduleDir + "/", window.location.origin)
+                    .href;
+                componentMetadata.moduleUrl = moduleBaseUrl;
             }
             return from(componentPool.loadTemplate(json.type)).pipe(map((template) => {
                 if (!template || template.trim() === "") {
