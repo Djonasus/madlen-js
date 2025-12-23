@@ -1,6 +1,6 @@
 {
   "name": "@djonasus/madlen-js",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "",
   "main": "dist/index.js",
   "module": "dist/index.js",
@@ -16,6 +16,16 @@
       "import": "./dist/libs/*.js",
       "require": "./dist/libs/*.js",
       "types": "./dist/libs/*.d.ts"
+    },
+    "./configs/*": {
+      "import": "./dist/configs/*.js",
+      "require": "./dist/configs/*.js",
+      "types": "./dist/configs/*.d.ts"
+    },
+    "./utils/*": {
+      "import": "./dist/utils/*.js",
+      "require": "./dist/utils/*.js",
+      "types": "./dist/utils/*.d.ts"
     }
   },
   "files": [
