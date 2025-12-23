@@ -61,7 +61,6 @@ export class ComponentPool {
         selector,
         metadata.templateUrl
       );
-      console.log(`[ComponentPool] Loading template from: ${templateUrl}`);
       try {
         const response = await fetch(templateUrl);
         if (!response.ok) {
@@ -70,14 +69,12 @@ export class ComponentPool {
           );
         }
         const content = await response.text();
-        console.log(`[ComponentPool] Template content loaded:`, content);
         if (!content || content.trim() === "") {
           throw new Error(`Template file ${templateUrl} is empty`);
         }
         metadata.templateContent = content;
         return content;
       } catch (error: any) {
-        console.error(`[ComponentPool] Error loading template:`, error);
         throw new Error(
           `Failed to load template from ${templateUrl}: ${error.message}`
         );
@@ -95,18 +92,40 @@ export class ComponentPool {
       return templateUrl;
     }
 
+    const isViteEnv = (() => {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-implied-eval
+        return new Function(
+          'try { return typeof import !== "undefined" && typeof import.meta !== "undefined" && import.meta.env !== undefined; } catch { return false; }'
+        )();
+      } catch {
+        return false;
+      }
+    })();
+
     const metadata = this.metadata.get(selector);
     if (metadata?.moduleUrl) {
+      const needsRaw =
+        isViteEnv &&
+        templateUrl.endsWith(".html") &&
+        !templateUrl.includes("?");
+      const withRaw = needsRaw ? `${templateUrl}?raw` : templateUrl;
+
       if (templateUrl.startsWith("/")) {
-        return templateUrl;
+        return withRaw;
       }
-      return new URL(templateUrl, metadata.moduleUrl + "/").href;
+      return new URL(withRaw, metadata.moduleUrl + "/").href;
     }
 
     if (templateUrl.startsWith("./") || templateUrl.startsWith("../")) {
       try {
         const baseUrl = window.location.origin + "/src/modules/";
-        return new URL(templateUrl, baseUrl).href;
+        const needsRaw =
+          isViteEnv &&
+          templateUrl.endsWith(".html") &&
+          !templateUrl.includes("?");
+        const withRaw = needsRaw ? `${templateUrl}?raw` : templateUrl;
+        return new URL(withRaw, baseUrl).href;
       } catch {
         return templateUrl;
       }
