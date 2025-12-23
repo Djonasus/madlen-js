@@ -103,13 +103,7 @@ export class SDUIComposer {
                 `Template is empty for component ${json.type}. Check templateUrl or template property.`
               );
             }
-            console.log(`[Composer] Template for ${json.type}:`, template);
             const element = this.createElementFromTemplate(template);
-            console.log(
-              `[Composer] Created element tagName:`,
-              element.tagName,
-              element
-            );
 
             if (componentVersion) {
               element.setAttribute("data-component-version", componentVersion);
@@ -127,14 +121,12 @@ export class SDUIComposer {
               this.applyProps(element, json.props);
             }
 
-            // Создаем экземпляр компонента и инициализируем его
             const componentInstance = this.createComponentInstance(
               ComponentClass,
               json.props,
               element
             );
 
-            // Сохраняем экземпляр компонента в элементе для доступа
             (element as any).__componentInstance = componentInstance;
 
             return { element, children: json.children };
@@ -184,28 +176,14 @@ export class SDUIComposer {
 
     trimmedTemplate = trimmedTemplate.trim();
 
-    console.log(
-      `[Composer] createElementFromTemplate input (cleaned):`,
-      trimmedTemplate
-    );
-
     const tempContainer = document.createElement("div");
     tempContainer.innerHTML = trimmedTemplate;
 
-    console.log(
-      `[Composer] tempContainer children count:`,
-      tempContainer.children.length
-    );
-    console.log(`[Composer] tempContainer innerHTML:`, tempContainer.innerHTML);
-
     if (tempContainer.children.length === 1) {
-      const element = tempContainer.firstElementChild as HTMLElement;
-      console.log(`[Composer] Returning single child:`, element.tagName);
-      return element;
+      return tempContainer.firstElementChild as HTMLElement;
     }
 
     if (tempContainer.children.length > 1) {
-      // Если несколько элементов, пытаемся найти основной (не script, не style)
       const mainElement = Array.from(tempContainer.children).find(
         (el) =>
           el.tagName !== "SCRIPT" &&
@@ -215,7 +193,6 @@ export class SDUIComposer {
       );
 
       if (mainElement) {
-        console.log(`[Composer] Returning main element:`, mainElement.tagName);
         return mainElement as HTMLElement;
       }
 
@@ -223,13 +200,9 @@ export class SDUIComposer {
       while (tempContainer.firstChild) {
         wrapper.appendChild(tempContainer.firstChild);
       }
-      console.log(
-        `[Composer] Returning wrapper with ${wrapper.children.length} children`
-      );
       return wrapper;
     }
 
-    // Если шаблон не содержит элементов, это ошибка
     throw new Error(
       `Template does not contain any HTML elements. Template content: "${template}"`
     );
@@ -244,22 +217,13 @@ export class SDUIComposer {
 
     Object.entries(styles).forEach(([key, value]) => {
       const cssProperty = key.replace(/([A-Z])/g, "-$1").toLowerCase();
+      const stringValue = String(value);
 
       const cssValue = computedStyles.getPropertyValue(cssProperty);
       const isSetInCSS = cssValue && cssValue.trim() !== "";
 
-      if (!isSetInCSS || cssValue !== String(value)) {
-        (element.style as any)[cssProperty] = value;
-      } else {
-        if (
-          cssProperty === "border-radius" ||
-          cssProperty === "padding" ||
-          cssProperty === "margin"
-        ) {
-          (element.style as any)[cssProperty] = value;
-        } else {
-          (element.style as any)[cssProperty] = value;
-        }
+      if (!isSetInCSS || cssValue !== stringValue) {
+        (element.style as any)[cssProperty] = stringValue;
       }
     });
   }
