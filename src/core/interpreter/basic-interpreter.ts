@@ -4,9 +4,9 @@ import jss from "jss";
 
 interface BasicComponentSchema {
   selector: string;
-  children: BasicComponentSchema[];
-  props: Record<string, any>;
-  styles: Record<string, string>;
+  children?: BasicComponentSchema[];
+  props?: Record<string, any>;
+  styles?: Record<string, string>;
 }
 
 export class BasicInterpreter implements IInterpreter<BasicComponentSchema> {
@@ -46,7 +46,7 @@ export class BasicInterpreter implements IInterpreter<BasicComponentSchema> {
       }
     }
 
-    if (input.children.length > 0) {
+    if (input.children && input.children.length > 0) {
       const targetContainer = childrenContainer || element;
       this.createElementRecursive(targetContainer, input.children);
     }

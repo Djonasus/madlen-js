@@ -23,7 +23,7 @@ export class BasicInterpreter {
                 this.applyStyles(rootElement, input.styles);
             }
         }
-        if (input.children.length > 0) {
+        if (input.children && input.children.length > 0) {
             const targetContainer = childrenContainer || element;
             this.createElementRecursive(targetContainer, input.children);
         }
