@@ -95,23 +95,26 @@ export class ComponentPool {
     }
 
     const metadata = this.metadata.get(selector);
-    if (metadata?.moduleUrl) {
+
+    if (templateUrl.startsWith("/")) {
       const needsRaw =
         templateUrl.endsWith(".html") && !templateUrl.includes("?");
-      const withRaw = needsRaw ? `${templateUrl}?raw` : templateUrl;
-
-      if (templateUrl.startsWith("/")) {
-        return withRaw;
-      }
-      return new URL(withRaw, metadata.moduleUrl + "/").href;
+      return needsRaw ? `${templateUrl}?raw` : templateUrl;
     }
 
     if (templateUrl.startsWith("./") || templateUrl.startsWith("../")) {
-      const baseUrl = window.location.origin + "/src/modules/";
+      if (!metadata?.moduleUrl) {
+        throw new Error(
+          `Cannot resolve template URL "${templateUrl}" for component "${selector}": ` +
+            `moduleUrl is not set. Make sure the component is registered in a module ` +
+            `or moduleUrl is set in component metadata.`
+        );
+      }
+
       const needsRaw =
         templateUrl.endsWith(".html") && !templateUrl.includes("?");
       const withRaw = needsRaw ? `${templateUrl}?raw` : templateUrl;
-      return new URL(withRaw, baseUrl).href;
+      return new URL(withRaw, metadata.moduleUrl + "/").href;
     }
 
     return templateUrl;
