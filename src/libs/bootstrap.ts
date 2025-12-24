@@ -1,4 +1,4 @@
-import { Observable, throwError } from "rxjs";
+import { Observable, throwError, of } from "rxjs";
 import { catchError, switchMap, map } from "rxjs/operators";
 import {
   ComponentDefinition,
@@ -10,17 +10,24 @@ import { inject } from "./di";
 import { HttpService } from "./http";
 import { createDefaultModuleResolver } from "../utils/module-resolvers";
 import { ModuleDefinition, moduleLoader } from "./module-loader";
+import { ModuleRouter, RouterOptions } from "./router";
 
 export interface BootstrapOptions {
   composerOptions?: ComposerOptions;
   autoDetectEnvironment?: boolean;
   preloadModules?: ModuleDefinition[];
+  /**
+   * Опции роутера для предзагрузки модулей из раскладки
+   * Если указаны, роутер будет автоматически предзагружать модули перед рендерингом
+   */
+  routerOptions?: RouterOptions;
 }
 
 export class Bootstrap {
   private apiUrl: string;
   private containerId: string;
   private composer: SDUIComposer;
+  private router?: ModuleRouter;
 
   @inject()
   private httpService!: HttpService;
@@ -47,10 +54,15 @@ export class Bootstrap {
         moduleLoader.preloadModule(module);
       });
     }
+
+    if (options?.routerOptions) {
+      this.router = new ModuleRouter(options.routerOptions);
+    }
   }
 
   /**
    * Рендерит компонент и возвращает Observable для обработки результата и ошибок
+   * Если указан роутер, модули будут предзагружены из раскладки перед рендерингом
    * @returns Observable<HTMLElement> - поток с готовым элементом
    */
   public render(): Observable<HTMLElement> {
@@ -91,6 +103,18 @@ export class Bootstrap {
                 )
             );
           }
+
+          if (this.router) {
+            return this.router.preloadModulesFromLayout$(of(layout)).pipe(
+              catchError(() => {
+                return of(layout);
+              }),
+              switchMap((preloadedLayout) => {
+                return this.composer.compose(preloadedLayout);
+              })
+            );
+          }
+
           return this.composer.compose(layout);
         }),
         map((element) => {

@@ -1,19 +1,22 @@
 import { ModuleDefinition } from "./module-loader";
+import { ComponentDefinition } from "./composer";
+import { Observable } from "rxjs";
+/**
+ * Карта маршрутизации: маппинг moduleId -> путь к модулю.
+ * Если не указана, используется modulePathResolver
+ */
+export type RoutingMap = Map<string, string> | ((moduleId: string) => string);
 export interface RouterOptions {
     /**
      * Функция для преобразования moduleId в путь к файлу модуля
+     * Используется, если routingMap не указан
      */
     modulePathResolver: (moduleId: string) => string;
     /**
-     * Базовый путь для роутинга (например, "/module" или "#/module")
-     * По умолчанию используется hash-based роутинг: "#/"
+     * Карта маршрутизации: явный маппинг moduleId -> путь к модулю
+     * Если указана, имеет приоритет над modulePathResolver
      */
-    basePath?: string;
-    /**
-     * Использовать ли hash-based роутинг (true) или pathname-based (false)
-     * По умолчанию: true
-     */
-    useHash?: boolean;
+    routingMap?: RoutingMap;
     /**
      * Callback, вызываемый при успешной загрузке модуля
      */
@@ -25,43 +28,30 @@ export interface RouterOptions {
 }
 export declare class ModuleRouter {
     private modulePathResolver;
-    private basePath;
-    private useHash;
+    private routingMap?;
     private onModuleLoaded?;
     private onModuleError?;
-    private currentModuleId;
     constructor(options: RouterOptions);
     /**
-     * Запускает роутер и начинает слушать изменения URL
+     * Получает путь к модулю из карты маршрутизации или использует resolver
      */
-    start(): void;
+    private getModulePath;
     /**
-     * Останавливает роутер
+     * Извлекает все уникальные moduleId из дерева компонентов рекурсивно
      */
-    stop(): void;
+    private extractModuleIds;
     /**
-     * Навигация к модулю программно
+     * Предзагружает все модули, необходимые для раскладки
+     * @param layout - раскладка страницы с бэкенда
+     * @returns Promise, который резолвится когда все модули загружены
      */
-    navigate(moduleId: string): void;
+    preloadModulesFromLayout(layout: ComponentDefinition): Promise<ModuleDefinition[]>;
     /**
-     * Получает текущий moduleId из URL
+     * Предзагружает модули из раскладки и возвращает Observable с раскладкой
+     * Используется для интеграции с Bootstrap.render()
+     * @param layout$ - Observable с раскладкой страницы
+     * @returns Observable с той же раскладкой, но после предзагрузки модулей
      */
-    getCurrentModuleId(): string | null;
-    /**
-     * Обрабатывает текущий маршрут
-     */
-    private handleRoute;
-    /**
-     * Извлекает moduleId из текущего URL
-     */
-    private extractModuleIdFromUrl;
-    /**
-     * Загружает модуль по его ID
-     */
-    private loadModule;
-    /**
-     * Строит путь для навигации
-     */
-    private buildPath;
+    preloadModulesFromLayout$(layout$: Observable<ComponentDefinition>): Observable<ComponentDefinition>;
 }
 //# sourceMappingURL=router.d.ts.map

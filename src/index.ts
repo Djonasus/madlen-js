@@ -4,6 +4,7 @@ export * from "./libs/http";
 export * from "./libs/module-loader";
 export * from "./libs/composer";
 export * from "./libs/bootstrap";
+export * from "./libs/router";
 export * from "./utils/module-resolvers";
 export * from "./utils/module-builder";
 export * from "./configs";

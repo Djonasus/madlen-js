@@ -1,22 +1,26 @@
 import { ModuleDefinition, moduleLoader } from "./module-loader";
+import { ComponentDefinition } from "./composer";
+import { Observable, from, throwError } from "rxjs";
+import { switchMap, catchError } from "rxjs/operators";
+
+/**
+ * Карта маршрутизации: маппинг moduleId -> путь к модулю.
+ * Если не указана, используется modulePathResolver
+ */
+export type RoutingMap = Map<string, string> | ((moduleId: string) => string);
 
 export interface RouterOptions {
   /**
    * Функция для преобразования moduleId в путь к файлу модуля
+   * Используется, если routingMap не указан
    */
   modulePathResolver: (moduleId: string) => string;
 
   /**
-   * Базовый путь для роутинга (например, "/module" или "#/module")
-   * По умолчанию используется hash-based роутинг: "#/"
+   * Карта маршрутизации: явный маппинг moduleId -> путь к модулю
+   * Если указана, имеет приоритет над modulePathResolver
    */
-  basePath?: string;
-
-  /**
-   * Использовать ли hash-based роутинг (true) или pathname-based (false)
-   * По умолчанию: true
-   */
-  useHash?: boolean;
+  routingMap?: RoutingMap;
 
   /**
    * Callback, вызываемый при успешной загрузке модуля
@@ -31,141 +35,114 @@ export interface RouterOptions {
 
 export class ModuleRouter {
   private modulePathResolver: (moduleId: string) => string;
-  private basePath: string;
-  private useHash: boolean;
+  private routingMap?: RoutingMap;
   private onModuleLoaded?: (module: ModuleDefinition, moduleId: string) => void;
   private onModuleError?: (error: Error, moduleId: string) => void;
-  private currentModuleId: string | null = null;
 
   constructor(options: RouterOptions) {
     this.modulePathResolver = options.modulePathResolver;
-    this.basePath =
-      options.basePath || (options.useHash !== false ? "#/" : "/");
-    this.useHash = options.useHash !== false;
+    this.routingMap = options.routingMap;
     this.onModuleLoaded = options.onModuleLoaded;
     this.onModuleError = options.onModuleError;
   }
 
   /**
-   * Запускает роутер и начинает слушать изменения URL
+   * Получает путь к модулю из карты маршрутизации или использует resolver
    */
-  start(): void {
-    this.handleRoute();
-
-    if (this.useHash) {
-      window.addEventListener("hashchange", () => this.handleRoute());
-    } else {
-      window.addEventListener("popstate", () => this.handleRoute());
-    }
-  }
-
-  /**
-   * Останавливает роутер
-   */
-  stop(): void {
-    if (this.useHash) {
-      window.removeEventListener("hashchange", () => this.handleRoute());
-    } else {
-      window.removeEventListener("popstate", () => this.handleRoute());
-    }
-  }
-
-  /**
-   * Навигация к модулю программно
-   */
-  navigate(moduleId: string): void {
-    const path = this.buildPath(moduleId);
-
-    if (this.useHash) {
-      window.location.hash = path;
-    } else {
-      window.history.pushState({ moduleId }, "", path);
-      this.handleRoute();
-    }
-  }
-
-  /**
-   * Получает текущий moduleId из URL
-   */
-  getCurrentModuleId(): string | null {
-    return this.currentModuleId;
-  }
-
-  /**
-   * Обрабатывает текущий маршрут
-   */
-  private handleRoute(): void {
-    const moduleId = this.extractModuleIdFromUrl();
-
-    if (!moduleId) {
-      return;
-    }
-
-    if (this.currentModuleId === moduleId) {
-      return;
-    }
-
-    this.currentModuleId = moduleId;
-    this.loadModule(moduleId);
-  }
-
-  /**
-   * Извлекает moduleId из текущего URL
-   */
-  private extractModuleIdFromUrl(): string | null {
-    let path: string;
-
-    if (this.useHash) {
-      path = window.location.hash.slice(1);
-    } else {
-      path = window.location.pathname;
-    }
-
-    if (this.basePath && path.startsWith(this.basePath)) {
-      path = path.slice(this.basePath.length);
-    }
-
-    path = path.replace(/^\/+|\/+$/g, "");
-
-    const parts = path.split("/");
-    const moduleId = parts[0] || null;
-
-    return moduleId || null;
-  }
-
-  /**
-   * Загружает модуль по его ID
-   */
-  private async loadModule(moduleId: string): Promise<void> {
-    try {
-      const modulePath = this.modulePathResolver(moduleId);
-      console.log(`Загрузка модуля ${moduleId} из ${modulePath}`);
-
-      const module = await moduleLoader.loadModule(moduleId, modulePath);
-
-      console.log(`Модуль ${moduleId} успешно загружен`, module);
-
-      if (this.onModuleLoaded) {
-        this.onModuleLoaded(module, moduleId);
-      }
-    } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
-      console.error(`Ошибка загрузки модуля ${moduleId}:`, err);
-
-      if (this.onModuleError) {
-        this.onModuleError(err, moduleId);
+  private getModulePath(moduleId: string): string {
+    if (this.routingMap) {
+      if (this.routingMap instanceof Map) {
+        const path = this.routingMap.get(moduleId);
+        if (path) {
+          return path;
+        }
+      } else if (typeof this.routingMap === "function") {
+        return this.routingMap(moduleId);
       }
     }
+    return this.modulePathResolver(moduleId);
   }
 
   /**
-   * Строит путь для навигации
+   * Извлекает все уникальные moduleId из дерева компонентов рекурсивно
    */
-  private buildPath(moduleId: string): string {
-    if (this.useHash) {
-      return `#/${moduleId}`;
-    } else {
-      return `/${moduleId}`;
+  private extractModuleIds(layout: ComponentDefinition): Set<string> {
+    const moduleIds = new Set<string>();
+
+    const traverse = (component: ComponentDefinition) => {
+      if (component.moduleId) {
+        moduleIds.add(component.moduleId);
+      }
+
+      if (component.children && Array.isArray(component.children)) {
+        component.children.forEach((child) => traverse(child));
+      }
+    };
+
+    traverse(layout);
+    return moduleIds;
+  }
+
+  /**
+   * Предзагружает все модули, необходимые для раскладки
+   * @param layout - раскладка страницы с бэкенда
+   * @returns Promise, который резолвится когда все модули загружены
+   */
+  async preloadModulesFromLayout(
+    layout: ComponentDefinition
+  ): Promise<ModuleDefinition[]> {
+    const moduleIds = this.extractModuleIds(layout);
+    const loadPromises: Promise<ModuleDefinition>[] = [];
+
+    for (const moduleId of moduleIds) {
+      const modulePath = this.getModulePath(moduleId);
+      const loadPromise = moduleLoader
+        .loadModule(moduleId, modulePath)
+        .then((module) => {
+          if (this.onModuleLoaded) {
+            this.onModuleLoaded(module, moduleId);
+          }
+          return module;
+        })
+        .catch((error) => {
+          const err = error instanceof Error ? error : new Error(String(error));
+          console.error(`Ошибка загрузки модуля ${moduleId}:`, err);
+          if (this.onModuleError) {
+            this.onModuleError(err, moduleId);
+          }
+          throw err;
+        });
+
+      loadPromises.push(loadPromise);
     }
+
+    return Promise.all(loadPromises);
+  }
+
+  /**
+   * Предзагружает модули из раскладки и возвращает Observable с раскладкой
+   * Используется для интеграции с Bootstrap.render()
+   * @param layout$ - Observable с раскладкой страницы
+   * @returns Observable с той же раскладкой, но после предзагрузки модулей
+   */
+  preloadModulesFromLayout$(
+    layout$: Observable<ComponentDefinition>
+  ): Observable<ComponentDefinition> {
+    return layout$.pipe(
+      switchMap((layout: ComponentDefinition) => {
+        return from(this.preloadModulesFromLayout(layout)).pipe(
+          catchError((error: Error) => {
+            console.warn(
+              "Не удалось предзагрузить некоторые модули, будет попытка загрузки при рендеринге:",
+              error
+            );
+            return from([]);
+          }),
+          switchMap(() => {
+            return from([layout]);
+          })
+        );
+      })
+    );
   }
 }

@@ -7,13 +7,14 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-import { throwError } from "rxjs";
+import { throwError, of } from "rxjs";
 import { catchError, switchMap, map } from "rxjs/operators";
 import { composer, SDUIComposer, } from "./composer";
 import { inject } from "./di";
 import { HttpService } from "./http";
 import { createDefaultModuleResolver } from "../utils/module-resolvers";
 import { moduleLoader } from "./module-loader";
+import { ModuleRouter } from "./router";
 export class Bootstrap {
     constructor(apiUrl, containerId, options) {
         this.apiUrl = apiUrl;
@@ -38,9 +39,14 @@ export class Bootstrap {
                 moduleLoader.preloadModule(module);
             });
         }
+        // Создаем роутер, если указаны опции
+        if (options?.routerOptions) {
+            this.router = new ModuleRouter(options.routerOptions);
+        }
     }
     /**
      * Рендерит компонент и возвращает Observable для обработки результата и ошибок
+     * Если указан роутер, модули будут предзагружены из раскладки перед рендерингом
      * @returns Observable<HTMLElement> - поток с готовым элементом
      */
     render() {
@@ -57,10 +63,23 @@ export class Bootstrap {
                 throw new Error(`Invalid layout response: missing 'entryPoint' field. Received: ${JSON.stringify(response)}`);
             }
             return response.entryPoint;
-        }), switchMap((layout) => {
+        }), 
+        // Если указан роутер, предзагружаем модули из раскладки
+        switchMap((layout) => {
             if (!layout || !layout.type) {
                 return throwError(() => new Error(`Invalid layout data: missing 'type' field. Received: ${JSON.stringify(layout)}`));
             }
+            // Если роутер указан, предзагружаем модули перед рендерингом
+            if (this.router) {
+                return this.router.preloadModulesFromLayout$(of(layout)).pipe(catchError(() => {
+                    // Если предзагрузка не удалась, продолжаем с раскладкой
+                    // Composer сам попытается загрузить модули при рендеринге
+                    return of(layout);
+                }), switchMap((preloadedLayout) => {
+                    return this.composer.compose(preloadedLayout);
+                }));
+            }
+            // Если роутер не указан, рендерим как обычно
             return this.composer.compose(layout);
         }), map((element) => {
             container.appendChild(element);
