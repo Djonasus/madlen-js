@@ -39,9 +39,14 @@ export class BasicInterpreter {
         if (!styles || Object.keys(styles).length === 0) {
             return;
         }
+        const convertedStyles = {};
+        Object.entries(styles).forEach(([key, value]) => {
+            const cssProperty = key.replace(/([A-Z])/g, "-$1").toLowerCase();
+            convertedStyles[cssProperty] = value;
+        });
         const className = `madlen-style-${Math.random().toString(36).substr(2, 9)}`;
         const sheet = jss.createStyleSheet({
-            [className]: styles,
+            [className]: convertedStyles,
         }, {
             link: true,
         });
