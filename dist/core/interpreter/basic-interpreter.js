@@ -42,9 +42,11 @@ export class BasicInterpreter {
         const className = `madlen-style-${Math.random().toString(36).substr(2, 9)}`;
         const sheet = jss.createStyleSheet({
             [className]: styles,
+        }, {
+            link: true,
         });
         sheet.attach();
-        element.classList.add(className);
+        element.classList.add(sheet.classes[className]);
     }
 }
 //# sourceMappingURL=basic-interpreter.js.map
