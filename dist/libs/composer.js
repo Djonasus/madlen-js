@@ -7,16 +7,34 @@ export class SDUIComposer {
         this.moduleLoader = options.moduleLoader || moduleLoader;
         this.globalComponentPool =
             options.globalComponentPool || globalComponentPool;
+        this.routingMap = options.routingMap;
         this.modulePathResolver =
             options.modulePathResolver ||
                 ((moduleId) => `/modules/${moduleId}/index.js`);
+    }
+    /**
+     * Получает путь к модулю из карты маршрутизации или использует resolver
+     */
+    getModulePath(moduleId) {
+        if (this.routingMap) {
+            if (this.routingMap instanceof Map) {
+                const path = this.routingMap.get(moduleId);
+                if (path) {
+                    return path;
+                }
+            }
+            else if (typeof this.routingMap === "function") {
+                return this.routingMap(moduleId);
+            }
+        }
+        return this.modulePathResolver(moduleId);
     }
     compose(json) {
         if (!json || !json.type) {
             return throwError(() => new Error(`Invalid ComponentDefinition: 'type' is required. Received: ${JSON.stringify(json)}`));
         }
         const module$ = json.moduleId
-            ? from(this.moduleLoader.loadModule(json.moduleId, this.modulePathResolver(json.moduleId)))
+            ? from(this.moduleLoader.loadModule(json.moduleId, this.getModulePath(json.moduleId)))
             : of(undefined);
         return module$.pipe(switchMap((module) => {
             const componentPool = module
@@ -30,7 +48,7 @@ export class SDUIComposer {
             const componentMetadata = componentPool.getMetadata(json.type);
             const componentVersion = json.version || componentMetadata?.version;
             if (json.moduleId && module && componentMetadata) {
-                const modulePath = this.modulePathResolver(json.moduleId).replace(/\\/g, "/");
+                const modulePath = this.getModulePath(json.moduleId).replace(/\\/g, "/");
                 let moduleDir = modulePath.substring(0, modulePath.lastIndexOf("/"));
                 if (moduleDir.endsWith("/index")) {
                     moduleDir = moduleDir.substring(0, moduleDir.length - "/index".length);

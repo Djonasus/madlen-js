@@ -36,12 +36,24 @@ export class Bootstrap {
     this.apiUrl = apiUrl;
     this.containerId = containerId;
 
-    if (options?.composerOptions) {
-      this.composer = new SDUIComposer(options.composerOptions);
+    // Если указан роутер, передаем routingMap в composerOptions
+    const composerOptionsWithRouting = options?.composerOptions
+      ? {
+          ...options.composerOptions,
+          routingMap: options.routerOptions?.routingMap,
+        }
+      : options?.composerOptions;
+
+    if (composerOptionsWithRouting) {
+      this.composer = new SDUIComposer(composerOptionsWithRouting);
     } else if (options?.autoDetectEnvironment !== false) {
       const autoOptions = this.detectEnvironment();
       if (autoOptions) {
-        this.composer = new SDUIComposer(autoOptions);
+        // Передаем routingMap в autoOptions тоже
+        const autoOptionsWithRouting = options?.routerOptions?.routingMap
+          ? { ...autoOptions, routingMap: options.routerOptions.routingMap }
+          : autoOptions;
+        this.composer = new SDUIComposer(autoOptionsWithRouting);
       } else {
         this.composer = composer;
       }

@@ -23,20 +23,44 @@ export interface ComposerOptions {
   moduleLoader?: ModuleLoader;
   globalComponentPool?: ComponentPool;
   modulePathResolver?: (moduleId: string) => string;
+  /**
+   * Карта маршрутизации: маппинг moduleId -> путь к модулю
+   * Если указана, имеет приоритет над modulePathResolver
+   */
+  routingMap?: Map<string, string> | ((moduleId: string) => string);
 }
 
 export class SDUIComposer {
   private moduleLoader: ModuleLoader;
   private globalComponentPool: ComponentPool;
   private modulePathResolver: (moduleId: string) => string;
+  private routingMap?: Map<string, string> | ((moduleId: string) => string);
 
   constructor(options: ComposerOptions = {}) {
     this.moduleLoader = options.moduleLoader || moduleLoader;
     this.globalComponentPool =
       options.globalComponentPool || globalComponentPool;
+    this.routingMap = options.routingMap;
     this.modulePathResolver =
       options.modulePathResolver ||
       ((moduleId: string) => `/modules/${moduleId}/index.js`);
+  }
+
+  /**
+   * Получает путь к модулю из карты маршрутизации или использует resolver
+   */
+  private getModulePath(moduleId: string): string {
+    if (this.routingMap) {
+      if (this.routingMap instanceof Map) {
+        const path = this.routingMap.get(moduleId);
+        if (path) {
+          return path;
+        }
+      } else if (typeof this.routingMap === "function") {
+        return this.routingMap(moduleId);
+      }
+    }
+    return this.modulePathResolver(moduleId);
   }
 
   compose(json: ComponentDefinition): Observable<HTMLElement> {
@@ -54,7 +78,7 @@ export class SDUIComposer {
       ? from(
           this.moduleLoader.loadModule(
             json.moduleId,
-            this.modulePathResolver(json.moduleId)
+            this.getModulePath(json.moduleId)
           )
         )
       : of(undefined);
@@ -82,7 +106,7 @@ export class SDUIComposer {
         const componentVersion = json.version || componentMetadata?.version;
 
         if (json.moduleId && module && componentMetadata) {
-          const modulePath = this.modulePathResolver(json.moduleId).replace(
+          const modulePath = this.getModulePath(json.moduleId).replace(
             /\\/g,
             "/"
           );
