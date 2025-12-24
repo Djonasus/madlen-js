@@ -29,10 +29,23 @@ export function provide(customInjectionToken, customDIPool = globalDIPool) {
 }
 export function inject(customInjectionToken, customDIPool = globalDIPool) {
     return (target, propertyKey) => {
-        const injectionToken = customInjectionToken ??
-            Reflect.getMetadata("design:type", target, propertyKey);
+        let injectionToken = customInjectionToken;
+        // Если токен не указан явно, пытаемся получить его из TypeScript metadata
         if (!injectionToken) {
-            throw new Error(`Injection token for ${propertyKey} not found`);
+            const metadataType = Reflect.getMetadata("design:type", target, propertyKey);
+            if (metadataType && typeof metadataType === "function") {
+                injectionToken = metadataType;
+            }
+            else {
+                const propertyDescriptor = Object.getOwnPropertyDescriptor(target, propertyKey);
+                if (propertyDescriptor && propertyDescriptor.value) {
+                }
+            }
+        }
+        if (!injectionToken) {
+            throw new Error(`Injection token for ${propertyKey} not found. ` +
+                `Please specify it explicitly: @inject(LoggerService) or @inject("LoggerService"). ` +
+                `Make sure 'emitDecoratorMetadata' is enabled in tsconfig.json.`);
         }
         Object.defineProperty(target, propertyKey, {
             get: () => customDIPool.get(injectionToken),

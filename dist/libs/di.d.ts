@@ -6,7 +6,7 @@ export declare class DIPool {
     register<T>(injectionToken: Constructor<T> | string, useClass: () => T): void;
     get<T>(injectionToken: Constructor<T> | string): T;
 }
-export declare function provide(customInjectionToken?: string, customDIPool?: DIPool): (constructor: Constructor) => void;
-export declare function inject(customInjectionToken?: string, customDIPool?: DIPool): (target: any, propertyKey: string) => void;
+export declare function provide(customInjectionToken?: string | Constructor, customDIPool?: DIPool): (constructor: Constructor) => void;
+export declare function inject(customInjectionToken?: string | Constructor, customDIPool?: DIPool): (target: any, propertyKey: string) => void;
 export {};
 //# sourceMappingURL=di.d.ts.map

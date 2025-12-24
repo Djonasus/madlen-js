@@ -39,7 +39,6 @@ export class Bootstrap {
                 moduleLoader.preloadModule(module);
             });
         }
-        // Создаем роутер, если указаны опции
         if (options?.routerOptions) {
             this.router = new ModuleRouter(options.routerOptions);
         }
@@ -63,23 +62,17 @@ export class Bootstrap {
                 throw new Error(`Invalid layout response: missing 'entryPoint' field. Received: ${JSON.stringify(response)}`);
             }
             return response.entryPoint;
-        }), 
-        // Если указан роутер, предзагружаем модули из раскладки
-        switchMap((layout) => {
+        }), switchMap((layout) => {
             if (!layout || !layout.type) {
                 return throwError(() => new Error(`Invalid layout data: missing 'type' field. Received: ${JSON.stringify(layout)}`));
             }
-            // Если роутер указан, предзагружаем модули перед рендерингом
             if (this.router) {
                 return this.router.preloadModulesFromLayout$(of(layout)).pipe(catchError(() => {
-                    // Если предзагрузка не удалась, продолжаем с раскладкой
-                    // Composer сам попытается загрузить модули при рендеринге
                     return of(layout);
                 }), switchMap((preloadedLayout) => {
                     return this.composer.compose(preloadedLayout);
                 }));
             }
-            // Если роутер не указан, рендерим как обычно
             return this.composer.compose(layout);
         }), map((element) => {
             container.appendChild(element);
