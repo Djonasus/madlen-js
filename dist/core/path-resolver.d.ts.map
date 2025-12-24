@@ -1,0 +1,1 @@
+{"version":3,"file":"path-resolver.d.ts","sourceRoot":"","sources":["../../src/core/path-resolver.ts"],"names":[],"mappings":"AAAA,qBAAa,YAAY;IACvB,OAAO,CAAC,QAAQ,CAAS;gBAEb,QAAQ,EAAE,MAAM;IAI5B,OAAO,CAAC,YAAY,EAAE,MAAM,GAAG,MAAM;CAuBtC"}
