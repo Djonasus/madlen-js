@@ -1,4 +1,13 @@
 import { Constructor } from "./di";
+export interface ComponentProps {
+    [key: string]: any;
+}
+export interface ComponentInstance<TProps extends ComponentProps = ComponentProps> {
+    props?: TProps;
+    element?: HTMLElement;
+    onInit?(): void;
+    onDestroy?(): void;
+}
 export interface ComponentOptions {
     selector: string;
     template?: string;

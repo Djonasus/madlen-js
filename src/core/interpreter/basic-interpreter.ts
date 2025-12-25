@@ -1,4 +1,5 @@
 import { ComponentMetadata, globalComponentPool } from "../component";
+import { Constructor } from "../di";
 import { IInterpreter } from "./iinterpreter";
 import jss from "jss";
 
@@ -28,8 +29,13 @@ export class BasicInterpreter implements IInterpreter<BasicComponentSchema> {
 
     const element = document.createDocumentFragment();
 
+    const interpolatedTemplate = this.interpolateTemplate(
+      componentMetadata.template,
+      input.props
+    );
+
     const tempContainer = document.createElement("div");
-    tempContainer.innerHTML = componentMetadata.template;
+    tempContainer.innerHTML = interpolatedTemplate;
 
     const childrenContainer = tempContainer.querySelector(
       "[madlen-children]"
@@ -39,8 +45,18 @@ export class BasicInterpreter implements IInterpreter<BasicComponentSchema> {
       element.appendChild(tempContainer.firstChild);
     }
 
+    const rootElement = element.firstElementChild as HTMLElement;
+
+    if (rootElement && component) {
+      const componentInstance = this.createComponentInstance(
+        component,
+        input.props,
+        rootElement
+      );
+      (rootElement as any).__componentInstance = componentInstance;
+    }
+
     if (input.styles && Object.keys(input.styles).length > 0) {
-      const rootElement = element.firstElementChild as HTMLElement;
       if (rootElement) {
         this.applyStyles(rootElement, input.styles);
       }
@@ -62,6 +78,40 @@ export class BasicInterpreter implements IInterpreter<BasicComponentSchema> {
       const element = this.interpret(child) as DocumentFragment;
       parent.append(element);
     }
+  }
+
+  private interpolateTemplate(
+    template: string,
+    props?: Record<string, any>
+  ): string {
+    if (!props || Object.keys(props).length === 0) {
+      return template;
+    }
+
+    return template.replace(/\{\{(\w+)\}\}/g, (match, propName) => {
+      return props[propName] !== undefined ? String(props[propName]) : match;
+    });
+  }
+
+  private createComponentInstance(
+    ComponentClass: Constructor,
+    props?: Record<string, any>,
+    element?: HTMLElement
+  ): any {
+    const instance = new ComponentClass();
+
+    if (props) {
+      instance.props = props;
+    }
+    if (element) {
+      instance.element = element;
+    }
+
+    if (typeof instance.onInit === "function") {
+      instance.onInit();
+    }
+
+    return instance;
   }
 
   private applyStyles(

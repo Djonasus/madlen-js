@@ -8,6 +8,8 @@ interface BasicComponentSchema {
 export declare class BasicInterpreter implements IInterpreter<BasicComponentSchema> {
     interpret(input: BasicComponentSchema): HTMLElement | DocumentFragment;
     private createElementRecursive;
+    private interpolateTemplate;
+    private createComponentInstance;
     private applyStyles;
 }
 export {};
