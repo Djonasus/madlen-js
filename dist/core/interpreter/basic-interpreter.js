@@ -11,9 +11,12 @@ export class BasicInterpreter {
             throw new Error(`Component metadata not found for ${input.selector}`);
         }
         const element = document.createDocumentFragment();
-        const interpolatedTemplate = this.interpolateTemplate(componentMetadata.template, input.props);
+        let template = componentMetadata.template;
+        if (input.props && Object.keys(input.props).length > 0) {
+            template = this.interpolateTemplate(template, input.props);
+        }
         const tempContainer = document.createElement("div");
-        tempContainer.innerHTML = interpolatedTemplate;
+        tempContainer.innerHTML = template;
         const childrenContainer = tempContainer.querySelector("[madlen-children]");
         while (tempContainer.firstChild) {
             element.appendChild(tempContainer.firstChild);
@@ -44,7 +47,7 @@ export class BasicInterpreter {
         if (!props || Object.keys(props).length === 0) {
             return template;
         }
-        return template.replace(/\{\{(\w+)\}\}/g, (match, propName) => {
+        return template.replace(/\{\{\s*(\w+)\s*\}\}/g, (match, propName) => {
             return props[propName] !== undefined ? String(props[propName]) : match;
         });
     }

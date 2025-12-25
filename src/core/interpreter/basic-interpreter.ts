@@ -29,13 +29,13 @@ export class BasicInterpreter implements IInterpreter<BasicComponentSchema> {
 
     const element = document.createDocumentFragment();
 
-    const interpolatedTemplate = this.interpolateTemplate(
-      componentMetadata.template,
-      input.props
-    );
+    let template = componentMetadata.template;
+    if (input.props && Object.keys(input.props).length > 0) {
+      template = this.interpolateTemplate(template, input.props);
+    }
 
     const tempContainer = document.createElement("div");
-    tempContainer.innerHTML = interpolatedTemplate;
+    tempContainer.innerHTML = template;
 
     const childrenContainer = tempContainer.querySelector(
       "[madlen-children]"
@@ -88,7 +88,7 @@ export class BasicInterpreter implements IInterpreter<BasicComponentSchema> {
       return template;
     }
 
-    return template.replace(/\{\{(\w+)\}\}/g, (match, propName) => {
+    return template.replace(/\{\{\s*(\w+)\s*\}\}/g, (match, propName) => {
       return props[propName] !== undefined ? String(props[propName]) : match;
     });
   }
